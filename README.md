@@ -6,15 +6,8 @@ at a time, and a provider can be a model, a parser, or a shell script.
 
 The design is in [`docs/serial-micro-agent-harness.md`](docs/serial-micro-agent-harness.md).
 
-This release implements the **memory layers** (sections 9.3 and 9.7).
-
-**Hardware floor.** The name says small, not tiny. The target is a mini PC or a
-Raspberry Pi 4 or 5 class board: 4 cores, 4–16 GB of RAM, and an SSD or a fast
-card. A Raspberry Pi Pico cannot run this — a microcontroller is three orders
-of magnitude short on RAM. No GPU is needed anywhere.
-
-There are **no runtime dependencies**. Everything is SQLite with FTS5, which
-ships with Python.
+This release implements the **memory layers** (sections 9.3 and 9.7). It has **no runtime
+dependencies**. Everything is SQLite with FTS5, which ships with Python.
 
 | Layer | Question it answers | Class |
 |-------|--------------------|-------|
