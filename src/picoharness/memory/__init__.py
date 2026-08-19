@@ -4,10 +4,12 @@ Two stores, one SQLite file, one ingest pass:
 
 * `EpisodicIndex` — cross-session memory. What happened last time.
 * `FailureMemory` — what went wrong, and what worked instead.
+* `CostModel` — what a provider actually costs on THIS machine.
 
 Both are DERIVED from the session ledgers. Delete the database and rebuild it.
 """
 
+from .cost import COST_SCHEMA, CostModel, Estimate
 from .episodic import (
     EpisodicIndex,
     Provenance,
@@ -26,6 +28,9 @@ from .failure import (
 
 __all__ = [
     "EpisodicIndex",
+    "CostModel",
+    "Estimate",
+    "COST_SCHEMA",
     "RecallPolicy",
     "Recalled",
     "Provenance",

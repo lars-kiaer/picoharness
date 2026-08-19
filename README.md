@@ -6,13 +6,21 @@ at a time, and a provider can be a model, a parser, or a shell script.
 
 The design is in [`docs/serial-micro-agent-harness.md`](docs/serial-micro-agent-harness.md).
 
-This release implements the **memory layers** (sections 9.3 and 9.7). It has **no runtime
-dependencies**. Everything is SQLite with FTS5, which ships with Python.
+This release implements the **memory layers** (sections 9.3 and 9.7).
+
+**Hardware floor.** The name says small, not tiny. The target is a mini PC or a
+Raspberry Pi 4 or 5 class board: 4 cores, 4–16 GB of RAM, and an SSD or a fast
+card. A Raspberry Pi Pico cannot run this — a microcontroller is three orders
+of magnitude short on RAM. No GPU is needed anywhere.
+
+There are **no runtime dependencies**. Everything is SQLite with FTS5, which
+ships with Python.
 
 | Layer | Question it answers | Class |
 |-------|--------------------|-------|
 | Episodic index | What happened last time? | `EpisodicIndex` |
 | Failure memory | What went wrong, and what worked instead? | `FailureMemory` |
+| Cost model | What does a provider cost on **this** machine? | `CostModel` |
 
 Both are **derived**. The session ledgers (`events.jsonl`) are the only source
 of truth. Delete the database file and rebuild it. A test asserts that a
@@ -24,7 +32,7 @@ rebuild loses nothing.
 
 ```bash
 pip install -e ".[dev]"
-pytest                      # 46 tests, about 1 second
+pytest                      # 58 tests, about 1 second
 ```
 
 Python 3.11 or later. No network access is needed at run time.
@@ -34,7 +42,7 @@ Python 3.11 or later. No network access is needed at run time.
 ## Quick start
 
 ```python
-from picoharness.memory import EpisodicIndex, FailureMemory, RecallPolicy
+from picoharness.memory import CostModel, EpisodicIndex, FailureMemory, RecallPolicy
 
 ix = EpisodicIndex("memory/episodic.db")
 ix.ingest_dir("sessions/")          # idempotent; re-run it as often as you like
@@ -44,6 +52,8 @@ ix.field_range("disk_free_pct", below=15)     # 0 model calls
 ix.similar_episodes("disk pressure host-a")   # 0 model calls
 ix.recall("io timeout", policy=RecallPolicy(budget_class="interactive"))
 fm.prompt_block(fm.avoidance(capability="extract@1"))
+
+CostModel(ix.conn).estimate("extract-350m-q4", "log_summary@2")
 ```
 
 Two runnable examples are in `examples/`.
@@ -206,9 +216,33 @@ planner output for injected content.
 
 ---
 
+## Cost model
+
+A manifest declares what a provider costs. `probe()` writes that number once,
+at install, and it is stale as soon as the machine, the page cache, or the room
+temperature changes. Every call already writes its duration to the ledger, so
+the measured cost is a query rather than a new subsystem.
+
+```python
+cm = CostModel(ix.conn)
+cm.estimate("extract-350m-q4", "log_summary@2")   # p50, p90, confidence
+cm.cheapest(["extract-350m-q4", "extract-1.2b-q4"], "log_summary@2")
+cm.stale_manifests()                              # run after a hardware change
+```
+
+Three rules keep it honest. Below five observations the estimate defers to the
+manifest, because one slow call is not a trend. The budget is charged p90 and
+not the mean, because the tail is what breaks a budget. A failed call still
+consumed the time, so it counts.
+
+One consequence is deliberate and worth knowing: a provider that is usually
+fast but occasionally very slow loses to one that is steadily slower.
+
 ## Design rules
 
 1. **Derived, not authoritative.** Rebuild from the ledgers at any time.
+6. **Measure, do not assume.** A number written at install is a guess by the
+   next week. Feed observation back in.
 2. **No side door.** A fact enters through the validation ladder, or not at all.
 3. **Trust is inherited and permanent.**
 4. **Path 1 first.** Add vectors when you have measured that you need them.

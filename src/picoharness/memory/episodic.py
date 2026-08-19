@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
+from .cost import COST_SCHEMA
 from .failure import FAILURE_SCHEMA, classify_event
 
 Trust = Literal["T0", "T1", "T2"]
@@ -77,12 +78,14 @@ CREATE TABLE IF NOT EXISTS fact (
     payload     TEXT NOT NULL,
     text        TEXT NOT NULL,
     valid_until TEXT,
+    duration_ms REAL,
     UNIQUE (session_id, seq)
 );
 
 CREATE INDEX IF NOT EXISTS ix_fact_schema  ON fact (schema_id, observed_at DESC);
 CREATE INDEX IF NOT EXISTS ix_fact_subject ON fact (subject, observed_at DESC);
 CREATE INDEX IF NOT EXISTS ix_fact_time    ON fact (observed_at DESC);
+CREATE INDEX IF NOT EXISTS ix_fact_cost    ON fact (provider_id, schema_id, duration_ms);
 
 -- The typed projection. This is what makes a range query need no model.
 CREATE TABLE IF NOT EXISTS fact_field (
@@ -247,6 +250,7 @@ class EpisodicIndex:
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
         self.conn.executescript(FAILURE_SCHEMA)
+        self.conn.executescript(COST_SCHEMA)
         self.conn.execute(
             "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)",
             (str(SCHEMA_VERSION),),
@@ -354,12 +358,12 @@ class EpisodicIndex:
             text = searchable_text(fact["payload"])
             cur = self.conn.execute(
                 "INSERT INTO fact (session_id, seq, observed_at, schema_id, provider_id,"
-                " trust, subject, payload, text, valid_until) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                " trust, subject, payload, text, valid_until, duration_ms) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     ep.session_id, fact["seq"], fact["observed_at"], fact["schema_id"],
                     fact["provider_id"], fact["trust"], fact["subject"],
                     json.dumps(fact["payload"], ensure_ascii=False, sort_keys=True),
-                    text, fact["valid_until"],
+                    text, fact["valid_until"], fact["duration_ms"],
                 ),
             )
             fact_id = cur.lastrowid
@@ -385,10 +389,10 @@ class EpisodicIndex:
         self.conn.executemany(
             "INSERT INTO failure (session_id, seq, observed_at, kind, step, capability,"
             " tool, provider_id, schema_id, signature, detail, detail_trust, attempt,"
-            " resolution, resolved_by, resolved_seq)"
+            " resolution, resolved_by, resolved_seq, duration_ms)"
             " VALUES (:session_id,:seq,:observed_at,:kind,:step,:capability,:tool,"
             ":provider_id,:schema_id,:signature,:detail,:detail_trust,:attempt,"
-            ":resolution,:resolved_by,:resolved_seq)",
+            ":resolution,:resolved_by,:resolved_seq,:duration_ms)",
             [
                 {
                     "session_id": ep.session_id,
@@ -613,6 +617,7 @@ class _EpisodeBuilder:
                     "subject": event.get("subject") or self._step_subject.get(step),
                     "payload": event.get("fact", {}),
                     "valid_until": event.get("valid_until"),
+                    "duration_ms": event.get("duration_ms"),
                 }
             )
         elif kind == "answer_sent":

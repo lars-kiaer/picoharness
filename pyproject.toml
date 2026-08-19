@@ -8,13 +8,19 @@ version = "0.1.0"
 description = "A serial micro-agent harness for CPU-only edge hardware"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Lars Kiær" }]
 keywords = ["agent", "harness", "edge", "local-first", "sqlite", "llm"]
 classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Database",
-  "Intended Audience :: Developers",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 # No runtime dependencies. Deliberate: the target is an offline edge box, and
 # every dependency is one more thing to provision by hand.
@@ -23,11 +29,20 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
+[project.urls]
+Homepage = "https://github.com/lars-kiaer/picoharness"
+Documentation = "https://github.com/lars-kiaer/picoharness/blob/main/docs/serial-micro-agent-harness.md"
+Source = "https://github.com/lars-kiaer/picoharness"
+Issues = "https://github.com/lars-kiaer/picoharness/issues"
+
 [project.scripts]
 pico-failures = "picoharness.memory.failure:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/picoharness"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "tests/", "examples/", "docs/", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

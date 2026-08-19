@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+dist/
+build/
+
+# Runtime data at the repo root only. Do NOT write these unanchored:
+# a bare `memory/` also matches src/picoharness/memory/ and silently
+# drops it from the wheel, because hatchling respects .gitignore.
+/memory/
+/sessions/

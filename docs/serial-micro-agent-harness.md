@@ -2,8 +2,12 @@
 
 **Serial Micro-Agent Harness — a design for a home-built edge compute agent system**
 
-Version 0.6 — draft for review
+Version 0.7 — draft for review
 Language: ASD-STE100 Simplified Technical English
+
+Change from v0.6. Section 1.4 states the position. Section 4.6 adds the machine
+profile to the composition hash. Section 12.4 makes the cost model
+self-calibrating. Appendix E compares the design with FreeToken.
 
 Change from v0.5. The project has a name: **picoharness**. Nothing else moved.
 
@@ -89,6 +93,35 @@ The system does not replace a large model. Do not use this design for:
 | C — browser | The CPU of the user | Browser limit | OPFS |
 
 Profile C has different limits. Section 13 gives the details.
+
+### 1.4 The position
+
+Other work makes large models run on personal hardware. That is a different
+target, and it does not replace this one.
+
+| | Frontier-local serving | This design |
+|---|---|---|
+| Floor | A laptop or desktop GPU | A fanless CPU board |
+| Power | 60–450 W | 5–15 W |
+| Cost | 1–5 kEUR | 100–400 EUR |
+| Placement | A desk | A cupboard, a van, a boat, a field cabinet |
+| Fleet | One machine | Twenty machines |
+| Sells on | Capability | Determinism, audit, and power budget |
+
+The two open different use cases. A workstation that serves a 300B model is a
+strong answer to "what can one person run at home". It is not an answer to
+"what can run unattended on 8 W in twenty places at once", and it never will
+be, because the constraint is watts and euros, not software.
+
+So the position rests on two legs, and it needs both:
+
+1. **The envelope.** No GPU, single-digit watts, hardware you can buy twenty
+   of. This is a hardware fact, not a claim about model quality.
+2. **The contract.** Every step is a pure function, every run replays bit for
+   bit, and every fact carries its provenance. See section 10.3.
+
+The position is **not** that small models are the only thing that works. That
+claim gets weaker every quarter. The two legs above do not.
 
 ---
 
@@ -268,6 +301,27 @@ Two rules follow:
   cannot read it, you cannot audit it.
 - A replay must refuse to run if the composition hash does not match, unless
   you ask for the difference on purpose.
+
+#### The machine profile belongs in the hash
+
+This is easy to miss. The composition covers the manifests, the schemas, and
+the policy. It must also cover the **machine profile**: the measured costs and
+the residency class of each provider.
+
+The reason is that the policy of section 6.4 filters on cost and on the budget
+that is left. A slow machine therefore selects a different provider from a fast
+one, and a different provider gives a different answer. Two runs with identical
+manifests and identical weights can then diverge, and a hash that omits the
+machine profile will call them equal.
+
+```json
+{"seq":0,"type":"composition","hash":"sha256:41d0…",
+ "machine":"sha256:7b2e…","config":"snapshots/boot-41d0.json"}
+```
+
+Keep the two hashes separate. A replay on the same machine must match both. A
+replay on different hardware matches the composition but not the machine, which
+is exactly the warning you want: *the plan is the same, the route may not be.*
 
 ---
 
@@ -1207,6 +1261,54 @@ answer is fewer model calls.
 
 ---
 
+### 12.4 Measure once is not enough
+
+Sections 12.1 to 12.3 tell you to measure and then choose a policy. That is
+correct as a first step and wrong as a permanent arrangement.
+
+`probe()` runs at install. Its numbers are stale as soon as anything moves: a
+different machine, a warm page cache, another process taking the CPU, a
+firmware change, a hotter room. A serving system that commits to a fixed
+strategy is optimising for a machine it is no longer running on.
+
+So do not commit. Map the work onto the resources that are actually there.
+
+**The loop is already half built.** Every provider call writes its duration
+into the ledger. The ledger is already indexed. The measured cost of a provider
+is therefore a query, not a new subsystem:
+
+```
+manifest cost  ──►  selection policy (6.4)  ──►  call  ──►  ledger
+      ▲                                                        │
+      └────────────  v_provider_cost  ◄──────────  ingest  ◄───┘
+```
+
+Three rules keep it honest.
+
+**A small sample does not override the manifest.** Below about five
+observations the estimate reports no measurement, and the policy keeps its
+declared number. One slow call is not a trend.
+
+**Charge p90 against the budget, not the mean.** The budget is broken by the
+tail. A mean hides it. Accept the consequence: a provider that is usually fast
+but occasionally very slow will lose to one that is steadily slower. That is
+the correct answer for a budget, and it may be the wrong answer for a feel of
+speed, so know which one you are optimising.
+
+**A failed call still cost the time.** Count it. A provider that is fast when
+it works and fails a third of the time is not a fast provider.
+
+**A caution on percentiles.** At the minimum sample size, the p90 is simply the
+slowest call seen. Read it as an upper bound until the count is high enough,
+and let the estimate say which of the two it is.
+
+**Reference implementation.** `picoharness.memory.cost` provides
+`v_provider_cost` and a `CostModel` with `estimate()`, `cheapest()`, and
+`stale_manifests()`. Run `stale_manifests()` after any hardware change: a
+manifest written on one machine is a guess on the next.
+
+---
+
 ## 13. Two deployment targets
 
 Do not design for both at the same time. The limits are different.
@@ -1276,7 +1378,7 @@ measured problem.
 | v3 | Provider selection policy, budgets, tool manifests, JIT tool retrieval. | Ten tools, and the prompt stays under 500 tokens. |
 | v4 | Planner, retries, the escalation ladder, capability gaps. | A task with a failing step still returns a useful answer. |
 | v5 | The three probe tasks of section 17. | All three run with manifest changes only. |
-| v6 | Fact store, episodic index (9.3), failure memory (9.7), trajectory cache. | A repeated task uses the cache and is measurably faster. The planner avoids a dead end it met before. |
+| v6 | Fact store, episodic index (9.3), failure memory (9.7), cost model (12.4), trajectory cache. | A repeated task uses the cache and is measurably faster. The planner avoids a dead end it met before, and the policy prices providers from measurement. |
 | v7 | Security suite, sandbox, approvals. | No poisoned fixture changes the control flow. |
 
 Two notes on the order.
@@ -1401,7 +1503,7 @@ harness/
       snapshot.json
   memory/
     facts.db            # 9.2
-    episodic.db         # 9.3 and 9.7  (picoharness.memory)
+    episodic.db         # 9.3, 9.7 and 12.4  (picoharness.memory)
     trajectories.db     # 9.4
   tests/
     fixtures/
@@ -1436,6 +1538,9 @@ harness/
 | Failure signature | The shape of an error, with the variable parts removed. |
 | Resolution | What worked after a failure: retry, escalation, or a new plan. |
 | Avoidance note | A structured, text-free failure record for the planner prompt. |
+| Machine profile | The measured costs and residency classes for one physical box. |
+| Self-calibration | Feeding observed call durations back into the cost model. |
+| Envelope | The hardware constraint: no GPU, single-digit watts, low unit cost. |
 | Trajectory | A stored sequence of steps that succeeded before. |
 | Trust level | T0 user, T1 outside, T2 validated internal. |
 | Cold load | A model load when the pages are not in the page cache. |
@@ -1523,3 +1628,59 @@ so the cost may be acceptable for a first version.
 Treat this as a v0 spike and not as a foundation. The project is a developer
 preview, and its own documentation states that compatibility-breaking changes
 will happen. Pin a version if you try it.
+
+---
+
+## Appendix E — Comparison with FreeToken
+
+FreeToken (arXiv:2608.16157, August 2026) is an edge-native serving system for
+Mixture-of-Experts models. It treats a personal machine as one elastic
+inference platform instead of as a small datacenter GPU, and it co-designs
+model layout, expert residency, CPU and GPU execution, agentic state reuse, and
+runtime memory management. It reports serving a 35B model on a laptop and a
+753B model on one workstation GPU.
+
+### E.1 What transfers
+
+**Do not commit to a fixed strategy.** FreeToken refuses a fixed offloading
+plan and maps computation onto the resources that are actually available. This
+design did commit, in the static decision table of section 12.2. Section 12.4
+now closes that loop. This is the single most useful idea to take.
+
+**Hardware balance differs from machine to machine.** Section 12 already says
+to measure on your own box. FreeToken generalises it: ship a calibration step,
+not a policy. The consequence for reproducibility is in section 4.6 — the
+machine profile has to be in the hash, or two machines will silently take
+different routes through the same plan.
+
+**Agent workloads change their execution pattern as they run.** Both designs
+build on this. FreeToken sees it in memory traffic; this design sees it in the
+per-task budget of section 5.3. Same observation, different layer.
+
+**Prefix reuse pays.** FreeToken co-designs around agentic state reuse. Section
+7.4 already has KV snapshots, and this is a reason to treat them as core rather
+than as an optimisation.
+
+### E.2 What does not transfer
+
+| | FreeToken | This design |
+|---|---|---|
+| Unit of swap | An expert inside one forward pass | A whole provider between two steps |
+| Bandwidth pressure | Per token | Per step |
+| Hardware floor | An 8 GB laptop GPU | A fanless CPU board |
+| Goal | Make one very large model runnable | Make each call small enough to avoid |
+
+Most of the co-design has no analogue here, because it is about placing parts of
+one enormous model across a memory hierarchy that includes a GPU. There is no
+GPU in profiles A and B.
+
+### E.3 What it does not change
+
+FreeToken raises the ceiling of what one desk-side machine can serve. It does
+not move the floor. The envelope in section 1.4 — no GPU, single-digit watts,
+hardware you can buy twenty of — is a hardware constraint, and no serving
+system relaxes it. Neither does it touch the contract in section 10.3.
+
+Read FreeToken as a neighbour, not as a competitor. It answers "what can one
+person run at home". This design answers "what can run unattended, on a
+power budget, in twenty places, and prove afterwards what it did".

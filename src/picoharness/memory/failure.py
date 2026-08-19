@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS failure (
     resolution   TEXT,
     resolved_by  TEXT,
     resolved_seq INTEGER,
+    duration_ms  REAL,
     UNIQUE (session_id, seq)
 );
 
@@ -312,6 +313,7 @@ def classify_event(event: dict[str, Any]) -> dict[str, Any] | None:
         "detail": detail,
         "detail_trust": event.get("detail_trust", default_trust),
         "attempt": int(event.get("attempt", 1)),
+        "duration_ms": event.get("duration_ms"),
         "signature": signature_for(
             kind,
             capability=event.get("capability"),
