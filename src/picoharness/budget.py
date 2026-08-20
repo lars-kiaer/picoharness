@@ -118,14 +118,22 @@ class Budget:
         )
 
     def fraction_spent(self) -> float:
-        """The tightest axis, as a fraction. An unlimited axis does not count."""
+        """The tightest axis, as a fraction. An unlimited axis does not count.
+
+        `None` means unlimited and is skipped. Zero means nothing is allowed on
+        that axis, which is spent from the start — a distinction worth keeping,
+        because a budget of zero is a legitimate way to say "answer with what
+        you already know".
+        """
         fractions = []
-        if self.limit.wall_ms:
-            fractions.append(self.elapsed_ms() / self.limit.wall_ms)
-        if self.limit.model_calls:
-            fractions.append(self.spent.model_calls / self.limit.model_calls)
-        if self.limit.cpu_ms:
-            fractions.append(self.spent.cpu_ms / self.limit.cpu_ms)
+        for spent, limit in (
+            (self.elapsed_ms(), self.limit.wall_ms),
+            (self.spent.model_calls, self.limit.model_calls),
+            (self.spent.cpu_ms, self.limit.cpu_ms),
+        ):
+            if limit is None:
+                continue
+            fractions.append(float("inf") if limit == 0 else spent / limit)
         return max(fractions, default=0.0)
 
     def exceeded(self) -> bool:

@@ -267,8 +267,14 @@ class Ledger:
     # -- read back ---------------------------------------------------------
 
     def events(self) -> list[dict[str, Any]]:
-        """Everything written so far, in order."""
-        self._fh.flush()
+        """Everything written so far, in order.
+
+        Works on a closed ledger too. The ledger is a file, and reading a
+        finished session is the ordinary case — the memory layers do nothing
+        else. Only a live handle needs flushing first.
+        """
+        if not self._fh.closed:
+            self._fh.flush()
         return list(read_events(self.path)) if self.path.exists() else []
 
 
@@ -380,6 +386,45 @@ def project(
     )
 
 
+#: Fields that record what the machine did, not what the function returned.
+#:
+#: Section 10.3 asks for deterministic replay: the same inputs produce the same
+#: result. A duration is not a result. It is an observation of a machine under
+#: whatever load it was under, and it never repeats — so a replay reproduces
+#: every field except these, and saying so is what keeps the claim testable.
+#:
+#: They stay in the ledger because section 12.4 needs them: every provider call
+#: writes its duration, and that is what makes the cost model a query rather
+#: than a new subsystem.
+MEASURED_FIELDS: frozenset[str] = frozenset({"duration_ms", "cpu_ms", "spent"})
+
+
+def result_of(event: dict[str, Any]) -> dict[str, Any]:
+    """One event with its measurements removed."""
+    return {k: v for k, v in event.items() if k not in MEASURED_FIELDS}
+
+
+def first_difference(
+    left: Sequence[dict[str, Any]], right: Sequence[dict[str, Any]]
+) -> str | None:
+    """Where two runs stopped agreeing, ignoring measurements. None if they agree.
+
+    Returns a description rather than a bool, because "the replay diverged" is
+    not a useful thing to be told at three in the morning.
+    """
+    if len(left) != len(right):
+        return f"different lengths: {len(left)} events against {len(right)}"
+    for index, (a, b) in enumerate(zip(left, right, strict=True)):
+        ra, rb = result_of(a), result_of(b)
+        if ra != rb:
+            fields = sorted({k for k in set(ra) | set(rb) if ra.get(k) != rb.get(k)})
+            return (
+                f"event {index} ({a.get('type')}) differs on {fields}: "
+                f"{ {k: ra.get(k) for k in fields} } against { {k: rb.get(k) for k in fields} }"
+            )
+    return None
+
+
 def assert_visible(held: ProviderInput, rebuilt: ProviderInput) -> None:
     """Refuse to call a provider with something the ledger cannot explain.
 
@@ -407,4 +452,7 @@ __all__ = [
     "ProviderInput",
     "project",
     "assert_visible",
+    "MEASURED_FIELDS",
+    "result_of",
+    "first_difference",
 ]
