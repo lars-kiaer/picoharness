@@ -60,6 +60,19 @@ The runtime is the next thing to build, in the model-free form §15 insists on.
 - **Security is declared per capability, not per provider** (6.2). One provider
   may serve `extract@1` over T1 and `route@1` over T0 only. A capability the
   manifest does not name gets `T2`: silence must not widen a boundary.
+- **The configuration plane is checked like the data plane** (6.3, 8.1). A
+  manifest is an instance of `manifest@1` with `additionalProperties: false`,
+  and a tool's arguments are checked against its `input_schema`. The defect this
+  closes: writing `secuirty` missed the whole block, so `max_trust_in` fell back
+  to its permissive default — a typo that made a security boundary *wider*.
+- **An instruction is a typed record with one free-text field** (10.3). Field
+  rules live in the schema and are rendered in; prose carries what a schema
+  cannot say. The prose is written at build time and never at run time, so a
+  planner has nowhere to put an instruction — only typed, trust-carrying
+  parameters.
+- **The topology is serial by decision, not by default** (3.1). Concurrency
+  would cost the residency policy, line-by-line diffing of two runs, and the
+  ledger being the causal history rather than a reconstruction of it.
 - **A missing confidence is not a low confidence** (6.5). A provider that
   reports no score is never gated, and a floor is measured from the ledger, not
   chosen. An uncalibrated score is worse than none because it looks like

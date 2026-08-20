@@ -25,6 +25,7 @@ from picoharness.ledger import Ledger, ReplayClock, first_difference, read_event
 from picoharness.memory import EpisodicIndex
 from picoharness.registry import Capability, CapabilityGap, Registry
 from picoharness.runtime import Runtime, Step
+from picoharness.schemas import READ_PATH_SCHEMA
 from picoharness.tools import read_disk, read_log
 from picoharness.validate import Schema
 from picoharness.world import LocalWorld
@@ -122,6 +123,10 @@ def build(tmp_path: Path, *, manifests=None, budget=None, session="job-v1",
     schemas = {
         "log_summary@2": Schema.from_file(FIXTURES / "schemas" / "log_summary@2.json"),
         "disk_usage@1": DISK_SCHEMA,
+        # A tool that declares an input schema needs that schema registered.
+        # The runtime refuses to run the tool otherwise, rather than passing the
+        # arguments through unchecked.
+        "read_path@1": Schema(schema_id="read_path@1", body=READ_PATH_SCHEMA),
     }
     runtime = Runtime(
         ledger,
@@ -529,3 +534,57 @@ def test_a_deployment_floor_applies_to_every_provider(tmp_path: Path) -> None:
     assert outcome.missing == ("s2",)
     refused = [e for e in runtime.ledger.events() if e["type"] == "validation_failed"]
     assert refused and "deployment floor" in refused[0]["error"]
+
+
+# --------------------------------------------------------------------------
+# tool arguments, section 8.1
+# --------------------------------------------------------------------------
+
+
+def test_a_bad_argument_never_reaches_the_tool(tmp_path: Path) -> None:
+    """The plan is the control plane, and from v4 a model writes it.
+
+    This is the only schema between a planner and executable code, so an
+    argument of the wrong shape must stop here and not at the file system.
+    """
+    runtime, _ = build(tmp_path)
+    outcome = runtime.run("goal", [Step("s1", "read_log", {"pathh": "/etc/passwd"})])
+    runtime.ledger.close()
+
+    assert outcome.missing == ("s1",)
+    refused = [e for e in runtime.ledger.events() if e["type"] == "validation_failed"]
+    assert refused and refused[0]["kind"] == "schema"
+    assert refused[0]["schema"] == "read_path@1"
+    assert "not in the schema" in refused[0]["error"]
+    assert not any(e["type"] == "tool_output" for e in runtime.ledger.events())
+
+
+def test_an_extra_argument_is_refused(tmp_path: Path) -> None:
+    """`additionalProperties: false`. A field nobody declared is a field nobody
+    checked, and a plan that carries one has gone somewhere unintended."""
+    runtime, data = build(tmp_path)
+    outcome = runtime.run(
+        "goal",
+        [Step("s1", "read_log", {"path": str(data / "syslog"), "recurse": True})],
+    )
+    runtime.ledger.close()
+    assert outcome.missing == ("s1",)
+
+
+def test_an_unregistered_input_schema_is_loud(tmp_path: Path) -> None:
+    """Silence here would mean running the tool with unchecked arguments."""
+    runtime, data = build(tmp_path)
+    runtime.tools["read_log"].input_schema = "never_registered@1"
+    outcome = runtime.run("goal", [Step("s1", "read_log", {"path": str(data / "syslog")})])
+    runtime.ledger.close()
+
+    assert outcome.missing == ("s1",)
+    refused = [e for e in runtime.ledger.events() if e["type"] == "validation_failed"]
+    assert "not registered" in refused[0]["error"]
+
+
+def test_a_valid_argument_passes_through(tmp_path: Path) -> None:
+    runtime, data = build(tmp_path)
+    outcome = runtime.run("goal", [Step("s1", "read_log", {"path": str(data / "syslog")})])
+    runtime.ledger.close()
+    assert outcome.ok

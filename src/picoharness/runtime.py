@@ -52,6 +52,7 @@ class Tool:
     run: Callable[[World, dict[str, Any]], Payload]
     reducer: str = "extract@1"
     output_schema: str = "unknown@0"
+    input_schema: str | None = None
     effect: str = "read_only"
     idempotent: bool = True
     trust_out: str = "T1"
@@ -60,6 +61,7 @@ class Tool:
     def resolve(self) -> dict[str, Any]:
         return {
             "reducer": self.reducer,
+            "input_schema": self.input_schema,
             "output_schema": self.output_schema,
             "effect": self.effect,
             "idempotent": self.idempotent,
@@ -105,6 +107,7 @@ class Runtime:
         budget: Budget | None = None,
         hooks: Hooks | None = None,
         cross_checks: dict[str, CrossChecks] | None = None,
+        audit: bool = True,
     ) -> None:
         self.ledger = ledger
         self.registry = registry
@@ -115,6 +118,23 @@ class Runtime:
         self.hooks = hooks or Hooks()
         self.cross_checks = cross_checks or {}
         self.breakers = BreakerState()
+
+        # Section 6.1: hold every registration to its contract before the first
+        # step, not at the third one. Everything checked here is knowable now.
+        if audit:
+            problems = registry.audit(self.schemas)
+            for name, tool in sorted(self.tools.items()):
+                if tool.input_schema and tool.input_schema not in self.schemas:
+                    problems.append(
+                        f"tool {name} declares input schema {tool.input_schema!r}, "
+                        f"which is not registered"
+                    )
+                if tool.output_schema not in self.schemas:
+                    problems.append(
+                        f"tool {name} produces {tool.output_schema!r}, which is not registered"
+                    )
+            if problems:
+                raise ProviderError("the composition does not hold: " + "; ".join(problems))
 
     # -- the loop, section 5.2 --------------------------------------------
 
@@ -165,6 +185,13 @@ class Runtime:
         # PREPARE, then EXECUTE.
         try:
             args = self.hooks.run("on_prepare", dict(step.args))
+            if (refused := self._check_args(tool, args)) is not None:
+                self.ledger.append(
+                    "validation_failed", step=step.id, tool=tool.name,
+                    schema=tool.input_schema, kind="schema",
+                    error=refused, detail_trust="T2",
+                )
+                return False
             raw = tool.run(self.world, args)
         except Rejected as rejected:
             self.ledger.append(rejected.event_type, step=step.id, tool=tool.name, **rejected.fields)
@@ -325,6 +352,22 @@ class Runtime:
             return None, 0.0, str(exc)
         finally:
             adapter.unload(handle)  # P13: every load unwinds, including on failure
+
+    def _check_args(self, tool: Tool, args: dict[str, Any]) -> str | None:
+        """Hold a step's arguments to the tool's declared input schema.
+
+        A tool that declares no input schema is not checked, and that is a gap
+        worth closing per tool rather than papering over here. A tool that
+        declares one the runtime does not have is a configuration error, and it
+        says so rather than passing the arguments through unchecked.
+        """
+        if not tool.input_schema:
+            return None
+        schema = self.schemas.get(tool.input_schema)
+        if schema is None:
+            return f"tool declares input schema {tool.input_schema!r}, which is not registered"
+        result = schema.check(args)
+        return None if result.ok else result.error()
 
     def _validate(self, record: Any, tool: Tool, raw: Payload) -> Any:
         """The ladder of section 10.2, levels 2 to 4."""

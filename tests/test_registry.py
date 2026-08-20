@@ -10,7 +10,15 @@ from __future__ import annotations
 import pytest
 
 from picoharness.adapters import CodeAdapter
-from picoharness.registry import Capability, CapabilityGap, Provider, Registry
+from picoharness.adapters.base import ProviderError
+from picoharness.registry import (
+    POLICY_ID,
+    Capability,
+    CapabilityGap,
+    Provider,
+    Registry,
+    policy_identity,
+)
 
 ENTRY = "picoharness.providers.log_summary:extract"
 
@@ -176,3 +184,110 @@ def test_the_registry_resolves_into_the_composition() -> None:
     assert resolved["adapters"] == ["code"]
     assert resolved["capabilities"]["route@1"]["control"] is True
     assert resolved["providers"]["p"]["entrypoint"] == ENTRY
+
+
+# --------------------------------------------------------------------------
+# the configuration plane is checked too
+# --------------------------------------------------------------------------
+
+
+def test_a_misspelt_key_does_not_widen_a_boundary() -> None:
+    """The defect this schema exists for.
+
+    `secuirty` misses the whole block, so `max_trust_in` falls back to `T1`.
+    A typo therefore made a security boundary wider, which is the inverse of
+    the rule in 6.2 that silence must never do that.
+    """
+    with pytest.raises(ProviderError, match="not in the schema"):
+        registry().add_provider({**manifest(), "secuirty": {"max_trust_in": "T2"}})
+
+
+@pytest.mark.parametrize(
+    ("why", "broken"),
+    [
+        ("unknown key", {"confidence_flooor": 0.9}),
+        ("modality as a string", {"modality_in": "text"}),
+        ("unknown kind", {"kind": "cact"}),
+        ("a trust level that does not exist", {"security": {"max_trust_in": "T3"}}),
+        ("floor outside 0..1", {"confidence_floor": 1.5}),
+        ("determinism that is not a word we use", {"determinism": "mostly"}),
+    ],
+)
+def test_a_malformed_manifest_is_refused(why: str, broken: dict) -> None:
+    with pytest.raises(ProviderError):
+        registry().add_provider({**manifest(), **broken})
+
+
+def test_security_must_name_capabilities_the_provider_implements() -> None:
+    """A mapping keyed on a typo would be ignored, and the real capability would
+    fall through to the strict default. Safe, but silently wrong is still wrong."""
+    with pytest.raises(ProviderError, match="does not implement"):
+        registry().add_provider(
+            manifest(security={"max_trust_in": {"extarct@1": "T1"}})
+        )
+    with pytest.raises(ProviderError, match="does not implement"):
+        registry().add_provider(manifest(security={"may_emit_control": ["rout@1"]}))
+
+
+def test_an_unchecked_manifest_is_possible_and_deliberate() -> None:
+    r = registry()
+    assert r.add_provider({**manifest(), "whatever": 1}, checked=False).id == "p"
+
+
+def test_modality_as_a_string_is_refused_in_code_too() -> None:
+    """Defence in depth: a substring test would make `tex` match `text`."""
+    p = Provider(id="p", kind="code", implements=("extract@1",),
+                 manifest={"modality_in": "text"})
+    with pytest.raises(ProviderError, match="must be a list"):
+        p.accepts("text/plain")
+
+
+# --------------------------------------------------------------------------
+# the contract, section 6.1
+# --------------------------------------------------------------------------
+
+
+def test_the_audit_finds_what_is_knowable_at_boot() -> None:
+    r = registry()
+    r.add_provider(manifest(id="orphan", implements=["translate@1"]))
+    r.add_provider(manifest(id="ghost", produces=["never_made@1"]))
+    r.add_provider(manifest(id="unrunnable", kind="onnx"))
+
+    problems = "; ".join(r.audit(schemas=["log_summary@2"]))
+    assert "orphan implements 'translate@1', which no capability declares" in problems
+    assert "ghost produces 'never_made@1', which is not registered" in problems
+    assert "unrunnable is kind 'onnx', and no adapter can run it" in problems
+
+
+def test_a_sound_composition_audits_clean() -> None:
+    r = registry()
+    r.add_provider(manifest(produces=["log_summary@2"]))
+    assert r.audit(schemas=["log_summary@2"]) == []
+
+
+# --------------------------------------------------------------------------
+# the policy has an identity, section 4.6
+# --------------------------------------------------------------------------
+
+
+def test_the_policy_is_named_and_hashed() -> None:
+    """The composition covered the policy's configuration and not its code, so
+    a rewritten `select()` could route differently under the same hash."""
+    identity = policy_identity()
+    assert identity["id"] == POLICY_ID
+    assert identity["digest"].startswith("sha256:")
+
+
+def test_the_policy_identity_reaches_the_composition() -> None:
+    assert registry().resolve()["policy"] == policy_identity()
+
+
+def test_the_digest_follows_the_code_and_not_the_configuration() -> None:
+    """It is taken from the source, so it moves on a change nobody declared."""
+    import inspect
+
+    from picoharness.registry import Registry as R
+
+    source = inspect.getsource(R.select)
+    assert "kind" in source and "TRUST_ORDER" in source  # the two lines that matter
+    assert policy_identity()["digest"] == policy_identity()["digest"]

@@ -27,13 +27,18 @@ by the following week.
 
 from __future__ import annotations
 
+import hashlib
+import inspect
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from .adapters.base import Adapter, ProviderError
+from .schemas import MANIFEST_SCHEMA, validate_security_block
 from .trust import TRUST_ORDER
+from .validate import Schema
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,11 +107,25 @@ class Provider:
         return self.manifest.get("escalates_to")
 
     def accepts(self, mime: str) -> bool:
+        """Does this provider take this kind of payload?
+
+        `modality_in` must be a list. A bare string would make this a substring
+        test, so `"tex"` would match `"text"` — the schema refuses that shape,
+        and this refuses it again for a provider built in code.
+        """
         declared = self.manifest.get("modality_in")
         if not declared:
             return True
+        if isinstance(declared, str):
+            raise ProviderError(
+                f"{self.id}: modality_in must be a list, not the string {declared!r}"
+            )
         family = mime.split("/", 1)[0]
         return family in declared or mime in declared
+
+
+#: Compiled once. The manifest schema is the fixed point of section 6.3.
+_MANIFEST = Schema(schema_id="manifest@1", body=MANIFEST_SCHEMA)
 
 
 class CapabilityGap(ProviderError):
@@ -138,10 +157,27 @@ class Registry:
         self.adapters[adapter.kind] = adapter
         return self
 
-    def add_provider(self, manifest: dict[str, Any]) -> Provider:
-        for required in ("id", "kind", "implements"):
-            if required not in manifest:
-                raise ProviderError(f"manifest is missing {required!r}: {manifest}")
+    def add_provider(self, manifest: dict[str, Any], *, checked: bool = True) -> Provider:
+        """Read one manifest, having first held it to `manifest@1`.
+
+        Loading an unchecked manifest is possible and should be rare. The reason
+        the check is on by default is in `schemas.py`: a misspelled key does not
+        fail, it falls back to a default, and the default for a trust ceiling is
+        the permissive one. A typo that widens a security boundary is worse than
+        a typo that breaks the run.
+        """
+        if checked:
+            result = _MANIFEST.check(manifest)
+            if not result.ok:
+                raise ProviderError(
+                    f"manifest {manifest.get('id', '?')!r} is not a valid manifest@1: "
+                    f"{result.error()}"
+                )
+            problems = validate_security_block(manifest)
+            if problems:
+                raise ProviderError(
+                    f"manifest {manifest.get('id', '?')!r}: " + "; ".join(problems)
+                )
         provider = Provider(
             id=manifest["id"],
             kind=manifest["kind"],
@@ -218,6 +254,35 @@ class Registry:
         pool.sort(key=lambda p: (p.kind != "code", p.id))
         return pool[0]
 
+    # -- the contract, section 6.1 ----------------------------------------
+
+    def audit(self, schemas: Iterable[str] = ()) -> list[str]:
+        """Hold every registration to its contract, at boot.
+
+        Section 6.1 calls a capability a contract with two schemas. Without this
+        the contract is a label: nothing checked that a provider implements a
+        capability anyone declared, or that the schema it claims to produce
+        exists.
+
+        Every problem here is knowable at start. Finding it at step three of a
+        task instead is the difference between a configuration error and an
+        outage.
+        """
+        problems: list[str] = []
+        known = set(schemas)
+        for pid, provider in sorted(self.providers.items()):
+            for capability in provider.implements:
+                if capability not in self.capabilities:
+                    problems.append(
+                        f"{pid} implements {capability!r}, which no capability declares"
+                    )
+            for schema in provider.produces:
+                if known and schema not in known:
+                    problems.append(f"{pid} produces {schema!r}, which is not registered")
+            if provider.kind not in self.adapters:
+                problems.append(f"{pid} is kind {provider.kind!r}, and no adapter can run it")
+        return problems
+
     def adapter_for(self, provider: Provider) -> Adapter:
         try:
             return self.adapters[provider.kind]
@@ -229,6 +294,7 @@ class Registry:
     def resolve(self) -> dict[str, Any]:
         """Everything registered, for the composition hash of section 4.6."""
         return {
+            "policy": policy_identity(),
             "capabilities": {
                 name: {
                     "input": c.input_schema,
@@ -242,4 +308,37 @@ class Registry:
         }
 
 
-__all__ = ["Registry", "Provider", "Capability", "CapabilityGap"]
+#: A name for the current selection rule. Bump it when the meaning of a choice
+#: changes, so a report can say which rule produced a run without diffing two
+#: hashes.
+POLICY_ID = "select@1"
+
+
+def policy_identity() -> dict[str, str]:
+    """What rule chose the providers, by name and by code.
+
+    The composition hash of section 4.6 covered the policy's *configuration* and
+    not its *code*. Two runs could therefore use a rewritten `select()` and still
+    claim the same composition while routing differently — the failure 4.6
+    exists to prevent, one level up.
+
+    The digest is taken from the source, so it moves on a change nobody
+    remembered to declare. It also moves on a comment, which is the harmless
+    direction: a spurious mismatch costs a question, and a missed one costs a
+    wrong answer nobody can explain.
+    """
+    source = inspect.getsource(Registry.select)
+    return {
+        "id": POLICY_ID,
+        "digest": "sha256:" + hashlib.sha256(source.encode("utf-8")).hexdigest()[:16],
+    }
+
+
+__all__ = [
+    "Registry",
+    "Provider",
+    "Capability",
+    "CapabilityGap",
+    "POLICY_ID",
+    "policy_identity",
+]

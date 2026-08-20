@@ -96,7 +96,7 @@ class Reduced:
     Two warnings belong with this field.
 
     An uncalibrated confidence is worse than none, because it looks like
-    information. Section 6.8 says small models fail together on the same hard
+    information. Section 6.9 says small models fail together on the same hard
     inputs; a model's own score is correlated with its errors in exactly the
     wrong direction, so it is confident when it is wrong.
 

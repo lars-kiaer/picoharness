@@ -2,8 +2,15 @@
 
 **Serial Micro-Agent Harness — a design for a home-built edge compute agent system**
 
-Version 0.8 — draft for review
+Version 0.9 — draft for review
 Language: ASD-STE100 Simplified Technical English
+
+Change from v0.8. A review of Sakana Fugu, and a survey of where schemas are
+used. Section 3.1 records the serial topology as a decision. Section 4.6 gives
+the selection policy an identity. Section 6.3 holds a manifest to a schema.
+Section 6.7 adds counterfactual policy replay. Section 8.1 checks a tool's
+arguments. Section 10.3 fixes the form of an instruction: one free-text field
+inside a typed envelope. Appendix G compares the design with Fugu.
 
 Change from v0.7. Four ideas come from a review of Needle 2. Section 6.2 lets
 one provider serve two capabilities, and moves the security declaration from the
@@ -212,6 +219,31 @@ unwind.
 The runtime is the only component that makes a decision. Everything else is a
 resource that the runtime calls.
 
+### 3.1 The topology is serial, and that is a decision
+
+Other designs treat the topology — who speaks to whom — as something to tune.
+This one has a single shape: strictly serial, with everything through the
+ledger. Record that as chosen, so that a later reader does not read it as an
+oversight.
+
+Three things depend on it.
+
+**The memory profile.** P5 keeps one provider active at a time. Concurrent
+workers mean concurrent weights, and the residency policy of section 7.3 stops
+being meaningful.
+
+**Deterministic replay.** Section 10.3 compares two runs by sequence number. With
+concurrent workers, two runs can interleave differently and produce different
+ledgers from the same inputs. Replay would then need a happens-before relation,
+and "diff two runs line by line" from section 4.1 is lost.
+
+**The audit trail.** One total order means the ledger *is* the causal history. A
+partial order is a thing you must reconstruct, and a reconstruction can be wrong.
+
+The cost is real: wall-clock time is the sum of the steps. Section 8.3 gives the
+one sanctioned exception, and it is bounded to a tool that is read-only,
+idempotent and cheap.
+
 ---
 
 ## 4. The ledger
@@ -329,6 +361,26 @@ machine profile will call them equal.
 Keep the two hashes separate. A replay on the same machine must match both. A
 replay on different hardware matches the composition but not the machine, which
 is exactly the warning you want: *the plan is the same, the route may not be.*
+
+#### The policy needs an identity of its own
+
+The composition covers the policy's **configuration**: the quality floor, the
+budget class, the order of the hooks. It does not cover the policy's **code**.
+
+Rewrite `select()` and two runs will claim the same composition while they route
+differently. That is the failure this section exists to prevent, one level up.
+
+So record two things about the rule that chose the providers:
+
+```json
+"policy": { "id": "select@1", "digest": "sha256:8b53…" }
+```
+
+The name is for a report, so that a person can say which rule produced a run
+without comparing two hashes. The digest comes from the code, so it moves on a
+change that nobody remembered to declare. It also moves on a comment, which is
+the harmless direction: a spurious mismatch costs a question, and a missed one
+costs a wrong answer that nobody can explain.
 
 ---
 
@@ -574,6 +626,33 @@ The `null` fields are not written by hand. The benchmark harness of section 12
 fills them, and the metrics loop of section 10.5 keeps them current. A manifest
 with `null` costs cannot be selected for a task that has a tight budget.
 
+#### A manifest is held to a schema
+
+Everything a provider **produces** passes a schema, a range check and a
+cross-check. For a long time nothing checked what **configures** a provider, and
+that is the wrong way round: a mistake in a manifest decides how every later call
+behaves.
+
+The failure that settles the argument is small and quiet. Write `secuirty`
+instead of `security`, and the whole block is missed, so `max_trust_in` falls
+back to its default. **A misspelling therefore makes a security boundary wider**,
+which is the exact inverse of the rule two sections above.
+
+So a manifest is an instance of `manifest@1`, with `additionalProperties: false`.
+A key nobody declared is a key nobody checked, and it now fails at load.
+
+Two notes on where the rules live.
+
+The schema holds the **field-level** rules: the type of each field, the closed
+set a `kind` may take, the range of a confidence floor. Rules that span two
+fields do not fit, and they belong in code: a per-capability trust map must name
+capabilities that the provider actually implements, and no schema keyword says
+that.
+
+`manifest@1` itself is not validated. It is the fixed point, in the way that
+nothing compiles a compiler. Keep it in code rather than in a file, so that it
+versions with the code that reads it, and put it in the composition hash.
+
 ### 6.4 The selection policy
 
 The policy is code. It is deterministic. It is testable.
@@ -624,7 +703,7 @@ Three rules keep it honest.
 low score. Without this rule, every parser in the system is demoted.
 
 **The manifest states where the number comes from.** An uncalibrated confidence
-is worse than none, because it looks like information. Section 6.8 says that
+is worse than none, because it looks like information. Section 6.9 says that
 small models fail together on the same hard inputs, so a model's own score is
 correlated with its errors in the wrong direction: it is most sure when it is
 wrong.
@@ -650,7 +729,47 @@ This turns into a useful list. After a month, the gap log tells you which
 specialist model to install next. The system tells you what it needs. You do
 not have to guess in advance which models to collect.
 
-### 6.7 The rule for a new capability
+### 6.7 Counterfactual policy replay
+
+Section 10.5 measures a provider's quality. Section 12.4 measures its cost.
+Nothing measures the **policy**, so there is no way to answer the one question
+that matters about it: would a different rule have chosen better?
+
+The architecture already holds the answer. The ledger records which provider was
+selected, whether it passed, and what it cost. The raw tool output is beside the
+ledger as a blob. So a finished session can be run again under a different rule,
+against the same bytes.
+
+```
+replay(session, policy) -> outcome
+```
+
+Two operations hide under that one name, and they are not the same.
+
+| | Cost | What it tells you |
+|---|------|-------------------|
+| Choice replay | A pure function over the ledger | *Which* provider the other rule would have picked |
+| Outcome replay | Run REDUCE again on the stored blob | Whether that pick did better |
+
+The second is only possible because the blobs are kept. It also means that **a
+finished session is a fixture set that nobody had to write**: an input, a
+validated record, and a provenance, harvested from work instead of authored.
+
+Two warnings.
+
+**A replayed session has no ground truth.** The original record passed
+validation, and section 10.1 is the whole reason that is not the same as being
+right. So a comparison of two policies measures pass rate and cost, and it must
+not be read as a measurement of correctness.
+
+**Except where a cross-check exists.** At level 4 the deterministic second path
+*is* ground truth for the fields it covers. Counterfactual replay is therefore
+most informative on the schemas with the best cross-checks, which is one more
+reason to write them.
+
+Do this after v3. Before then there is no policy to vary.
+
+### 6.8 The rule for a new capability
 
 A new capability must pass this test before you add it:
 
@@ -663,7 +782,7 @@ A critic model, a guard model, and a vote of three models each look attractive.
 Each one adds one more thing that can be wrong. On a CPU, a chain of six models
 can need more than 10 seconds for one request.
 
-### 6.8 Note on model votes
+### 6.9 Note on model votes
 
 Do not use a majority vote of three small models for a safety decision. Small
 models fail together on the same hard input. Their errors are correlated. A
@@ -792,6 +911,12 @@ Two warnings:
 
 The tool declares its own reducer. The dispatcher does not know how a log looks.
 The dispatcher only knows the goal.
+
+`input_schema` is not decoration. The plan is the control plane, and from v4 a
+model writes it, so this is **the only schema between a planner and executable
+code**. Check the arguments against it before the tool runs. A tool that declares
+no input schema is a gap to close in that tool, and not a reason to skip the
+check everywhere.
 
 ### 8.2 Just-in-time tool selection
 
@@ -1217,6 +1342,65 @@ Pin these items for every step:
 
 When all eight are pinned, a step becomes a pure function. The same input gives
 the same output. The whole run can then be replayed bit for bit.
+
+#### An instruction is a typed record with one free-text field
+
+Two of those eight pins — the system prompt and the schema — describe the same
+rules in two files. They are hashed apart, so they can drift apart while both
+stay pinned. Two independent pins on one rule are a source of drift, and not two
+defences.
+
+Nor is the answer to generate the prompt from the schema. Wording steers a small
+model, and this section pins the prompt *because* wording matters. Generation
+takes that control away.
+
+So put them in one artefact, with a shape the design already uses in section 9.7:
+**many typed fields, and exactly one field of free text.**
+
+```
+prompts/extract-log-summary.md
+
++++
+schema     = "log_summary@2"
+capability = "extract@1"
+covers     = ["host", "error_count", "first_error", "first_error_at",
+              "service", "max_severity", "service_restarted"]
+parameters = [{ name = "window_hours", type = "integer", trust = "T0" }]
++++
+
+Read the window in file order. Count lines, and not incidents: five lines
+about one failing disk are five errors.
+```
+
+Four rules make it work.
+
+**The prose completes the schema. It does not repeat it.** Field-level rules stay
+in the schema descriptions and are rendered into the prompt when it is built.
+Ordering rules, counting conventions, tone and a worked example go in the prose,
+because no schema keyword holds them. Prose that restates a field rule puts the
+drift back inside one file, which is worse, because it looks solved.
+
+**The free-text field is written at build time, and never at run time.** This is
+what makes the envelope a boundary and not a convenience. A planner has nowhere
+to put prose, so the rule that a planner supplies parameters and not instructions
+is enforced by the shape of the artefact.
+
+**A parameter is typed, trusted, and closed where it can be.** A type is not
+enough on its own: a `string` parameter is prose-shaped, and the type system only
+renames the injection. So every parameter carries a trust level, a parameter
+derived from T1 may not enter a pinned template at all, and a value space is
+closed wherever it can be — a field name comes from a schema, a budget class
+comes from four. Free text is the weak case, and it is T0 only.
+
+**One hash covers the whole envelope.** The pin list above then gets shorter, and
+a shorter pin list with the same coverage is strictly better.
+
+Choose a format that a person can read in a diff. JSON escapes a newline as
+`
+`, which makes the one artefact you most need to review the one you cannot
+read. Front matter with a prose body keeps the metadata checkable and the diff
+legible, and a TOML parser is in the Python standard library, so it costs no
+dependency.
 
 The eighth item closes the last hole. The first seven pin each part. The eighth
 pins the way that the parts were put together. Without it, two runs with the
@@ -1699,6 +1883,11 @@ harness/
 | Abstention | A provider reporting `null` because the input does not hold the value. |
 | Confidence gate | A refusal to commit a result that the provider scored below the floor. |
 | System channel | The typed record of environment state given to a provider. |
+| Instruction envelope | A typed record with one free-text field, holding a pinned prompt. |
+| Configuration plane | The manifests, schemas and policy that decide how a call behaves. |
+| Data plane | What a tool returns and a provider produces. |
+| Policy identity | The name and the code digest of the rule that selects a provider. |
+| Counterfactual replay | Running a finished session again under a different policy. |
 
 ---
 
@@ -1896,3 +2085,67 @@ stated p90 cost, ranked by where the failures land.
 Do not write the `.cact` adapter before the `gguf` adapter exists. Section 15
 puts `gguf` at v2 for a reason, and a second weight format before the first one
 works is a way to learn nothing twice.
+
+---
+
+## Appendix G — Comparison with Sakana Fugu
+
+Fugu is a shell installer for a hosted API, so there is nothing to read in the
+repository. The content is in two ICLR 2026 papers: **TRINITY**
+(arXiv:2512.04695), a compact coordinator optimised by evolutionary strategy that
+delegates to a pool of models without merging weights, and **Conductor**
+(arXiv:2512.04388), a model trained with reinforcement learning to design agent
+communication topologies and to write instructions for each worker.
+
+Fugu is this design inverted: a small coordinator over a pool of frontier cloud
+models. Two ideas transfer, and one boundary needs drawing.
+
+### G.1 What transfers
+
+**Coordination has its own quality.** Fugu improves the coordinator apart from
+the workers. This design measured provider quality and provider cost and never
+measured the rule that chooses between them. Section 6.7 adds the measurement.
+Take the measurement, and not their training method: there is no data here to
+train on.
+
+**A compact coordinator is enough.** TRINITY's coordinator is small while its
+pool is frontier-scale. That supports the assumption section 6 rests on.
+
+Be exact about how much it supports. Their coordinator delegates to strong
+workers; this one delegates to models of 350M to 1.2B. Coordination is harder
+when the workers are weak, because more of the load falls back on routing and
+retry. So TRINITY says "a small coordinator is enough when the workers are
+strong", and the claim here needs "a small coordinator is enough when the workers
+are small as well".
+
+Closer evidence is in section 4.1 of the companion note: Needle at 26M beats
+models ten times its size at routing. That is a small coordinator over a small
+pool, which is the case at hand. Two independent lines are a better argument
+than one.
+
+### G.2 The boundary: an instruction must not break a pin
+
+Conductor writes a targeted instruction for each worker. **Do not adopt that
+form.** Section 10.3 pins the system prompt by hash. A planner that composes a
+reducer's prompt destroys the pin, and a planner that has read T1 data would be
+writing prose into a worker's context, which breaks P7.
+
+The bounded form is in section 10.3: a planner supplies **parameters** to a
+pinned template and never free instruction text. The pin survives, most of the
+targeting benefit is kept, and the trust boundary holds. The instruction envelope
+makes it structural, because a planner has nowhere to put prose.
+
+### G.3 What does not transfer
+
+| | Fugu | This design |
+|---|---|---|
+| The pool | Frontier models in the cloud | Local weights on one box |
+| Network | Required | P9: none at run time |
+| Topology | A tunable | Fixed and serial. See 3.1 |
+| The coordinator | Retrained as the pool changes | Pinned, or the contract in 10.3 fails |
+| Artefacts | Papers readable, weights and coordinator not | — |
+
+The fourth line is the sharpest. Sakana update the pool continuously and retrain
+the coordinators against it. **A coordinator that drifts by design is exactly
+what the reproducibility contract forbids** without a new pin. It is not a detail
+of their engineering; it is the opposite direction.
