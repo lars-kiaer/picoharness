@@ -101,6 +101,21 @@ Ten minutes. If the outputs differ, `n_threads` and the build flags belong in
 the manifest and in the composition hash of section 4.6. Better to know now
 than after six months of logs.
 
+**Measured 2026-08-20. The outputs do not differ.** Three calls of
+`normal-01-syslog-disk-io` through LFM2-350M-Extract Q4_K_M, greedy, seed 0,
+under `llama-cpp-python` 0.3.35 on x86-64: `n_threads=1` and `n_threads=4` gave
+the same bytes, and a repeat at 4 gave them again. The repeat matters, because
+two runs that differ only in thread count cannot separate a threading effect
+from ordinary variation.
+
+So `n_threads` stays out of the composition hash, and `composition.py` needs no
+change. Read the result at its true width. It covers one model, one build, one
+machine, and greedy decoding, where a small difference in the sum only shows if
+it moves an argmax. A build with different instruction sets could answer
+differently, and the machine profile of section 4.6 already carries that case:
+the composition would match and the machine hash would not. Measure again on
+the first ARM board.
+
 ---
 
 ## 2. The harness is the evaluation harness
