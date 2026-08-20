@@ -1,0 +1,19 @@
+# Byte-identical on every machine, by default.
+#
+# Section 10.3 sells deterministic replay, and `core.autocrlf` quietly works
+# against it: a clone on Windows takes CRLF while the Linux boards that run the
+# same commit take LF. The two then disagree byte for byte on files whose bytes
+# are the specification.
+* text=auto eol=lf
+
+# Fixtures are the specification, not prose to be normalised. Section 5 of the
+# evaluation note says to keep the raw input, not a cleaned copy, and a line
+# ending is part of the raw input.
+#
+# Python text mode hides the difference, so this would never fail a test. It
+# would surface as a byte count, a `max_bytes_to_model` breaker tripping at a
+# different point, or a hash that does not match across machines.
+fixtures/** text eol=lf
+
+# Line endings are load-bearing in a shell script.
+*.sh text eol=lf
