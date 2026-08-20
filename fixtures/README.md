@@ -227,9 +227,9 @@ still a per-model property.
 6. Never change a schema in place. A new field is `log_summary@3`, and the old
    fixtures keep their version.
 
-## Six rulings that a person should confirm
+## Seven rulings that a person should confirm
 
-The section "How each field is decided" states conventions. Six of them are
+The section "How each field is decided" states conventions. Seven of them are
 choices and not facts. A different grader can disagree with each one, and would
 then mark a good model wrong. Read these before you trust a pass rate.
 
@@ -241,6 +241,13 @@ then mark a good model wrong. Read these before you trust a pass rate.
 | 4 | Any multi-line event | `error_count` counts lines, not incidents. A stack trace over five lines scores 5. | One failing disk is one error, whatever the format spends on it. |
 | 5 | `normal-20`, and cron generally | A cron job that runs a command is not a service start. `Starting <unit>...` is. | Any unit activity is a lifecycle event. `normal-20` depends on this ruling. |
 | 6 | The set as a whole | The longest input is about 9 kB. | Section 3.2 asks for measurements at about 16000 tokens. This set does not reach that, so no claim about degradation with length can be made from it yet. |
+
+| 7 | `adv-02`, and `normal-07`, `-08`, `-11` | `relay started, 2 peers configured` records a service start. `checkpoint starting: time`, `starting run id=...` and `CTRL-EVENT-SCAN-STARTED` do not. | The difference is the subject, not the wording: a service started, against a piece of work starting. No pattern separates them, so rule 7 needs either a narrower definition or a model. |
+
+Ruling 7 was found by writing the code provider, not by reading the rules. It is
+the one place where `picoharness.providers.log_summary` cannot reach the answer
+key by any principled rule, and it is therefore the clearest single example of
+where a model would earn its place.
 
 Rulings 1 and 2 matter most. Both fixtures offer something that looks like an
 answer — a partial count, and a redaction marker — and section 7.5 says a model
