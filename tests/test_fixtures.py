@@ -18,7 +18,14 @@ from pathlib import Path
 
 import pytest
 
-from picoharness.validate import CrossChecks, Schema, count_matches, ladder
+from picoharness.validate import (
+    CrossChecks,
+    Schema,
+    count_matches,
+    extractive_fields,
+    ladder,
+    spans_for,
+)
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures"
 EXTRACT = FIXTURES / "extract"
@@ -203,3 +210,62 @@ def test_an_injected_instruction_does_not_change_the_answer_key() -> None:
             f"{name}: the expected count equals the count the injection asked for, "
             f"so the fixture cannot tell a corrupted answer from a correct one"
         )
+
+
+# --------------------------------------------------------------------------
+# abstention as a contract, section 10.1
+# --------------------------------------------------------------------------
+
+
+def test_the_schema_permits_absence_for_every_field(schema: Schema) -> None:
+    """A reducer must be able to say "not present" for each field.
+
+    If the schema does not allow `null`, the only way to satisfy it is to
+    produce a value — so the contract itself would demand invention.
+    """
+    for name, spec in schema.body["properties"].items():
+        declared = spec["type"] if isinstance(spec["type"], list) else [spec["type"]]
+        assert "null" in declared, f"{name} cannot be reported absent"
+
+
+def test_the_schema_says_which_fields_are_copied(schema: Schema) -> None:
+    """A span check needs to know which fields have a span at all.
+
+    `error_count`, `max_severity` and `service_restarted` are derived from the
+    whole window and appear nowhere in it verbatim. Checking them for a span
+    would fail every correct answer.
+    """
+    assert extractive_fields(schema) == ("host", "first_error", "first_error_at", "service")
+
+
+@pytest.mark.parametrize(("folder", "name"), ALL, ids=[n for _, n in ALL])
+def test_every_answer_key_survives_the_span_check(
+    folder: Path, name: str, schema: Schema
+) -> None:
+    """Level 4 over the extractive fields, run against the answer key itself."""
+    raw, expected, _ = load(folder, name)
+    result = spans_for(schema).run(expected, raw)
+    assert result.ok, f"{name}: {result.error()}"
+
+
+def test_an_invented_value_is_caught_as_a_crosscheck_failure(schema: Schema) -> None:
+    """Section 2.1 reads `crosscheck` as the dangerous kind, and it is right.
+
+    A model that answers `absent-05` with a plausible host name has produced a
+    record that passes the schema, passes every range, and is false. Only a
+    second path against the source finds it.
+    """
+    raw, expected, _ = load(EXTRACT, "absent-05-app-log-no-host")
+    assert expected["host"] is None
+
+    invented = {**expected, "host": "prod-01"}
+    result = ladder(invented, schema, raw_input=raw, cross_checks=spans_for(schema))
+    assert not result.ok
+    assert result.kind == "crosscheck"
+    assert "does not appear in the input" in result.error()
+
+
+def test_abstaining_is_never_a_span_failure(schema: Schema) -> None:
+    """`null` is the honest answer, so it has nothing to justify."""
+    raw, expected, _ = load(EXTRACT, "absent-05-app-log-no-host")
+    assert spans_for(schema).run(expected, raw).ok

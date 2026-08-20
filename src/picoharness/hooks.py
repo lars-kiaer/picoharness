@@ -158,6 +158,32 @@ def trust_filter(max_trust_in: str) -> Listener:
     return listener
 
 
+def confidence_floor(floor: float) -> Listener:
+    """`on_commit`: refuse a result the provider itself is unsure of.
+
+    The manifest floor in section 6.5 is provider policy and the runtime applies
+    it. This is the deployment's own floor, applied to every provider at once —
+    useful when a whole installation wants a higher bar than any single manifest
+    declares.
+
+    A result with no confidence passes. A missing score is not a low score.
+    """
+
+    def listener(reduced: Any, nxt: Callable[[Any], Any]) -> Any:
+        score = getattr(reduced, "confidence", None)
+        if score is not None and score < floor:
+            raise Rejected(
+                "validation_failed",
+                kind="semantic",
+                error=f"confidence {score:.2f} is below the deployment floor {floor}",
+                detail_trust="T2",
+            )
+        return nxt(reduced)
+
+    listener.__name__ = f"confidence_floor({floor})"
+    return listener
+
+
 __all__ = [
     "Hooks",
     "Listener",
@@ -167,4 +193,5 @@ __all__ = [
     "HookError",
     "size_limit",
     "trust_filter",
+    "confidence_floor",
 ]

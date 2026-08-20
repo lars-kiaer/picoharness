@@ -5,7 +5,7 @@ adapter comes first, on purpose. It has no dependencies, and it proves the
 abstraction holds before a model is involved.
 """
 
-from .base import Adapter, Handle, ProviderError, Scope
+from .base import Adapter, Handle, ProviderError, Reduced, Scope
 from .code import CodeAdapter
 
-__all__ = ["Adapter", "Handle", "Scope", "ProviderError", "CodeAdapter"]
+__all__ = ["Adapter", "Handle", "Reduced", "Scope", "ProviderError", "CodeAdapter"]

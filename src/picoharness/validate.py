@@ -141,7 +141,7 @@ class Schema:
         {
             "$schema", "$id", "title", "description", "type", "properties",
             "required", "additionalProperties", "enum", "minimum", "maximum",
-            "minLength", "maxLength", "items",
+            "minLength", "maxLength", "items", "x-extractive",
         }
     )
 
@@ -242,12 +242,34 @@ class CrossChecks:
     This is double programming, the same method as in regulated clinical work:
     an independent path must reach the same result. Here the second path is
     deterministic code, so when the two disagree, the code wins.
+
+    Two kinds of check live here. A `CrossCheck` recomputes a value and compares.
+    A **span** requirement is weaker and cheaper: it only asks whether the value
+    the provider produced actually appears in the input it was given.
     """
 
     checks: dict[str, CrossCheck] = field(default_factory=dict)
+    spans: set[str] = field(default_factory=set)
 
     def add(self, field_name: str, check: CrossCheck) -> CrossChecks:
         self.checks[field_name] = check
+        return self
+
+    def require_span(self, *field_names: str) -> CrossChecks:
+        """Demand that these values be copied from the input, not composed.
+
+        Abstention is a contract, not a hope. A field the schema calls
+        extractive has exactly one honest source — the input — so a value with
+        no span in the input was invented, whatever else is true about it.
+
+        This lands at level 4 and not level 3 on purpose. Level 3 checks a value
+        against itself and needs nothing else; this needs the source, which is
+        what makes it a second deterministic path. The distinction is not
+        bookkeeping: section 2.1 reads `crosscheck` as the dangerous kind,
+        because it means the provider lied convincingly. An invented host name
+        is exactly that, and filing it as `range` would understate it.
+        """
+        self.spans.update(field_names)
         return self
 
     def run(self, instance: dict[str, Any], raw_input: str) -> Result:
@@ -277,6 +299,18 @@ class CrossChecks:
                         f"the model says {instance[name]!r}, code says {expected!r}",
                     )
                 )
+
+        for name in sorted(self.spans):
+            value = instance.get(name)
+            # A null is the honest answer for an absent field, so it is never a
+            # span failure. Only a non-null value has something to justify.
+            if not isinstance(value, str) or not value:
+                continue
+            if value not in raw_input:
+                failures.append(
+                    Failure(4, name, f"{value!r} does not appear in the input it was given")
+                )
+
         return Result(ok=not failures, failures=tuple(failures))
 
 
@@ -306,6 +340,20 @@ def ladder(
     return OK
 
 
+def extractive_fields(schema: Schema) -> tuple[str, ...]:
+    """The fields a schema says are copied from the input, in order."""
+    return tuple(
+        name
+        for name, spec in schema.body.get("properties", {}).items()
+        if spec.get("x-extractive")
+    )
+
+
+def spans_for(schema: Schema) -> CrossChecks:
+    """Cross-checks that hold every extractive field to its source."""
+    return CrossChecks().require_span(*extractive_fields(schema))
+
+
 def count_matches(pattern: str, *, flags: int = 0) -> CrossCheck:
     """A cross-check that counts matching lines. The `grep -c` of section 10.2."""
     import re
@@ -316,6 +364,8 @@ def count_matches(pattern: str, *, flags: int = 0) -> CrossCheck:
 
 __all__ = [
     "Schema",
+    "extractive_fields",
+    "spans_for",
     "SchemaError",
     "CrossChecks",
     "CrossCheck",

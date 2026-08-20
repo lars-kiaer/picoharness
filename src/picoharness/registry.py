@@ -59,13 +59,39 @@ class Provider:
     implements: tuple[str, ...]
     manifest: dict[str, Any] = field(default_factory=dict)
 
-    @property
-    def max_trust_in(self) -> str:
-        return self.manifest.get("security", {}).get("max_trust_in", "T1")
+    def max_trust_in(self, capability: str | None = None) -> str:
+        """The highest trust level this provider may read, for one capability.
 
-    @property
-    def may_emit_control(self) -> bool:
-        return bool(self.manifest.get("security", {}).get("may_emit_control", False))
+        Section 11.2 constrains what a **call** has read, not what a provider's
+        code is. The same weights can serve `extract@1` over a poisoned log and
+        `route@1` over a typed goal, as long as one call never mixes T1 input
+        with control output. So the ceiling is declared per capability:
+
+            "security": { "max_trust_in": { "extract@1": "T1", "route@1": "T0" } }
+
+        A capability the manifest does not list gets `T2`, the strictest answer.
+        Silence must not widen a security boundary.
+
+        The scalar form is still accepted and applies to every capability.
+        """
+        declared = self.manifest.get("security", {}).get("max_trust_in", "T1")
+        if isinstance(declared, dict):
+            return declared.get(capability, "T2")
+        return declared
+
+    def may_emit_control(self, capability: str | None = None) -> bool:
+        """May this provider decide what happens next, under this capability?
+
+        Declared as a list of the capabilities it is allowed to control with, so
+        that one provider can serve a data capability and a control capability
+        without the two permissions collapsing into one flag:
+
+            "security": { "may_emit_control": ["route@1"] }
+        """
+        declared = self.manifest.get("security", {}).get("may_emit_control", False)
+        if isinstance(declared, (list, tuple, set)):
+            return capability in declared
+        return bool(declared)
 
     @property
     def produces(self) -> tuple[str, ...]:
@@ -173,8 +199,8 @@ class Registry:
             pool = [p for p in pool if not p.produces or schema in p.produces]
 
         pool = [p for p in pool if p.accepts(mime)]
-        pool = [p for p in pool if TRUST_ORDER[trust_in] <= TRUST_ORDER[p.max_trust_in]]
-        pool = [p for p in pool if p.may_emit_control == is_control]
+        pool = [p for p in pool if TRUST_ORDER[trust_in] <= TRUST_ORDER[p.max_trust_in(capability)]]
+        pool = [p for p in pool if p.may_emit_control(capability) == is_control]
         pool = [p for p in pool if p.kind in self.adapters]
 
         # Section 6.4 also filters on measured pass rate against a quality floor,

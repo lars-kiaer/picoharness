@@ -83,6 +83,39 @@ class Scope:
             raise UnwindError("; ".join(failures))
 
 
+@dataclass(frozen=True, slots=True)
+class Reduced:
+    """What a provider produced, and how sure it was.
+
+    A provider may return a bare record; the runtime wraps it with
+    `confidence=None` and behaves exactly as before. A provider that can supply
+    a calibrated score returns this instead, and the runtime can then refuse to
+    commit below a declared floor — escalating **before** the work is used
+    rather than after a validation failure.
+
+    Two warnings belong with this field.
+
+    An uncalibrated confidence is worse than none, because it looks like
+    information. Section 6.8 says small models fail together on the same hard
+    inputs; a model's own score is correlated with its errors in exactly the
+    wrong direction, so it is confident when it is wrong.
+
+    Therefore `how` records where the number came from, and the floor is
+    **measured** and not chosen. The confidence is written into the ledger with
+    the fact, so the pass rate per confidence band is a query over what actually
+    happened — the same shape as section 12.4's cost model.
+    """
+
+    record: Any
+    confidence: float | None = None
+    how: str | None = None
+
+    @classmethod
+    def of(cls, value: Any) -> Reduced:
+        """Accept either form, so an old provider needs no change."""
+        return value if isinstance(value, cls) else cls(record=value)
+
+
 @dataclass(slots=True)
 class Handle:
     """A loaded provider. Opaque to the runtime except for the scope."""
@@ -151,4 +184,12 @@ def timed_probe(
     }
 
 
-__all__ = ["Adapter", "Handle", "Scope", "ProviderError", "UnwindError", "timed_probe"]
+__all__ = [
+    "Adapter",
+    "Handle",
+    "Reduced",
+    "Scope",
+    "ProviderError",
+    "UnwindError",
+    "timed_probe",
+]

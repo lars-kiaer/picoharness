@@ -48,6 +48,22 @@ The runtime is the next thing to build, in the model-free form §15 insists on.
 - **Path 1 first.** Structured SQL and BM25 answer most questions with no model.
   Do not add vector search until measurement shows path 1 is not enough — changing
   the embedder invalidates the whole index, which is hours on a CPU.
+- **Narrow the output space until the attack has no representation** (section
+  11.2). This is one method used in three places, and none of it depends on a
+  model behaving well: a reducer cannot emit a tool call because the schema has
+  no field for one; a model cannot name an unselected tool because the grammar
+  has no production for it; a model cannot invent a host name because an
+  extractive value must have a span in the input.
+- **Abstention is a contract** (10.2.1). Every schema field accepts `null`, and
+  a field marked `x-extractive` must appear in the input verbatim when it is not
+  null. `null` is never span-checked — it is the honest answer.
+- **Security is declared per capability, not per provider** (6.2). One provider
+  may serve `extract@1` over T1 and `route@1` over T0 only. A capability the
+  manifest does not name gets `T2`: silence must not widen a boundary.
+- **A missing confidence is not a low confidence** (6.5). A provider that
+  reports no score is never gated, and a floor is measured from the ledger, not
+  chosen. An uncalibrated score is worse than none because it looks like
+  information.
 
 ## The event vocabulary is already fixed
 

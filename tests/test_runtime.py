@@ -431,3 +431,101 @@ def test_raw_output_is_a_blob_and_the_ledger_stays_greppable(tmp_path: Path) -> 
         assert event["blob"].startswith("blobs/")
         assert (runtime.ledger.dir / event["blob"]).exists()
         assert "\n" not in json.dumps(event)  # one line per event
+
+
+# --------------------------------------------------------------------------
+# confidence as a pre-commit gate, section 6.5
+# --------------------------------------------------------------------------
+
+
+def unsure_extract(payload):
+    """A provider that knows it is guessing. Used only by the tests below."""
+    from picoharness.adapters import Reduced
+    from picoharness.providers.log_summary import extract
+
+    return Reduced(extract(payload), confidence=0.30, how="test-fixed")
+
+
+def confident_extract(payload):
+    from picoharness.adapters import Reduced
+    from picoharness.providers.log_summary import extract
+
+    return Reduced(extract(payload), confidence=0.95, how="test-fixed")
+
+
+def _with(entrypoint: str, **extra):
+    """The manifest set, with the log reducer swapped for a scoring one."""
+    out = []
+    for m in MANIFESTS:
+        if m["id"] == "code-logsummary":
+            out.append({**m, "entrypoint": entrypoint, **extra})
+        else:
+            out.append(dict(m))
+    return out
+
+
+def test_a_low_confidence_result_is_not_committed(tmp_path: Path) -> None:
+    """Escalate before the work is used, not after a validation failure."""
+    runtime, data = build(
+        tmp_path,
+        manifests=_with("tests.test_runtime:unsure_extract", confidence_floor=0.7),
+    )
+    outcome = runtime.run("goal", [Step("s2", "read_log", {"path": str(data / "syslog")})])
+    runtime.ledger.close()
+
+    assert outcome.missing == ("s2",)
+    refused = [e for e in runtime.ledger.events() if e["type"] == "validation_failed"]
+    assert refused and refused[0]["kind"] == "semantic"
+    assert "below the declared floor" in refused[0]["error"]
+    assert "test-fixed" in refused[0]["error"]  # the source is named
+
+
+def test_a_confident_result_commits_and_records_the_score(tmp_path: Path) -> None:
+    """The score goes into the ledger, so the floor can later be measured
+    rather than chosen. Same shape as the cost model of section 12.4."""
+    runtime, data = build(
+        tmp_path,
+        manifests=_with("tests.test_runtime:confident_extract", confidence_floor=0.7),
+    )
+    outcome = runtime.run("goal", [Step("s2", "read_log", {"path": str(data / "syslog")})])
+    runtime.ledger.close()
+
+    assert outcome.ok
+    fact = next(e for e in runtime.ledger.events() if e["type"] == "fact_added")
+    assert fact["confidence"] == 0.95
+
+
+def test_a_provider_without_a_score_is_not_gated(tmp_path: Path) -> None:
+    """A missing score is not a low score. Gating on absence would demote every
+    parser in the system."""
+    runtime, data = build(tmp_path, manifests=_with(
+        "picoharness.providers.log_summary:extract", confidence_floor=0.99
+    ))
+    outcome = runtime.run("goal", [Step("s2", "read_log", {"path": str(data / "syslog")})])
+    runtime.ledger.close()
+
+    assert outcome.ok
+    fact = next(e for e in runtime.ledger.events() if e["type"] == "fact_added")
+    assert "confidence" not in fact  # None fields are not written
+
+
+def test_no_floor_means_no_gate(tmp_path: Path) -> None:
+    """A provider may report a score without the manifest acting on it."""
+    runtime, data = build(tmp_path, manifests=_with("tests.test_runtime:unsure_extract"))
+    outcome = runtime.run("goal", [Step("s2", "read_log", {"path": str(data / "syslog")})])
+    runtime.ledger.close()
+    assert outcome.ok
+
+
+def test_a_deployment_floor_applies_to_every_provider(tmp_path: Path) -> None:
+    """The manifest floor is provider policy; this is the installation's own."""
+    from picoharness.hooks import confidence_floor
+
+    runtime, data = build(tmp_path, manifests=_with("tests.test_runtime:unsure_extract"))
+    runtime.hooks.on("on_commit", confidence_floor(0.8))
+    outcome = runtime.run("goal", [Step("s2", "read_log", {"path": str(data / "syslog")})])
+    runtime.ledger.close()
+
+    assert outcome.missing == ("s2",)
+    refused = [e for e in runtime.ledger.events() if e["type"] == "validation_failed"]
+    assert refused and "deployment floor" in refused[0]["error"]

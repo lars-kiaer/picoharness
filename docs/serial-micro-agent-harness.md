@@ -2,8 +2,15 @@
 
 **Serial Micro-Agent Harness — a design for a home-built edge compute agent system**
 
-Version 0.7 — draft for review
+Version 0.8 — draft for review
 Language: ASD-STE100 Simplified Technical English
+
+Change from v0.7. Four ideas come from a review of Needle 2. Section 6.2 lets
+one provider serve two capabilities, and moves the security declaration from the
+provider to the capability. Section 6.5 adds a confidence gate before the
+commit. Section 8.2 builds the grammar over the retrieved tools. Section 10.2.1
+makes abstention a contract. Section 11.2 adds the system channel rule and the
+principle behind all of them. Appendix F compares the design with Needle 2.
 
 Change from v0.6. Section 1.4 states the position. Section 4.6 adds the machine
 profile to the composition hash. Section 12.4 makes the cost model
@@ -506,6 +513,34 @@ compete for the same job. The policy prefers the code when the code qualifies.
 Providers are the extension point of the whole system. To add a new specialist
 model, write a manifest. Do not change the runtime.
 
+#### One provider can serve more than one capability
+
+Extraction is tool calling with one declared tool. The two operations have the
+same shape, so one provider can supply `extract@1` and `route@1`.
+
+Keep the capabilities separate in the registry. The control boundary of section
+11.2 depends on the separation, and a provider that serves both must not be able
+to mix the two in one call.
+
+This has a consequence for the manifest. The security fields belong to the
+**capability**, and not to the provider:
+
+```json
+"implements": ["extract@1", "route@1"],
+"security": {
+  "max_trust_in":     { "extract@1": "T1", "route@1": "T0" },
+  "may_emit_control": ["route@1"]
+}
+```
+
+Section 11.2 controls what one **call** has read. It does not control what the
+weights are. The same model can read a poisoned log for `extract@1`, because it
+can only emit a record that matches a schema. The same model must not read that
+log for `route@1`, because it then emits a tool call.
+
+A capability that the manifest does not name gets `T2`, which is the strictest
+answer. Silence must never make a security boundary wider.
+
 ### 6.3 The provider manifest
 
 ```json
@@ -523,7 +558,8 @@ model, write a manifest. Do not change the runtime.
   "resource": { "ram_mb": 420, "cold_load_ms": null, "warm_load_ms": null },
   "cost":     { "prefill_tok_s": null, "decode_tok_s": null },
 
-  "security": { "max_trust_in": "T1", "may_emit_control": false },
+  "security": { "max_trust_in": { "extract@1": "T1" }, "may_emit_control": [] },
+  "confidence_floor": 0.65,
 
   "determinism": "seeded",
   "sampler": { "temp": 0.0, "top_k": 1, "seed": 0 },
@@ -571,6 +607,39 @@ regex parser  ->  350M model  ->  1.2B model  ->  human approval  ->  decline
 Because the target is pure edge, the ladder ends inside the box. There is no
 cloud step. A decline is a valid outcome. It must be a clear statement of what
 the system could not do, and not a guess.
+
+#### The confidence gate
+
+The ladder above starts after a failure. A provider that can say how sure it is
+lets the runtime escalate **before** the work is used.
+
+A provider may return a confidence with its record. The manifest declares a
+`confidence_floor`. Below the floor the runtime does not commit; it escalates.
+This is much cheaper than the critic model at level 5 of section 10.2, and it
+needs no second model.
+
+Three rules keep it honest.
+
+**A provider that gives no confidence is not gated.** A missing score is not a
+low score. Without this rule, every parser in the system is demoted.
+
+**The manifest states where the number comes from.** An uncalibrated confidence
+is worse than none, because it looks like information. Section 6.8 says that
+small models fail together on the same hard inputs, so a model's own score is
+correlated with its errors in the wrong direction: it is most sure when it is
+wrong.
+
+**The floor is measured, and not chosen.** Write the confidence into the ledger
+with the fact. The pass rate for each band of confidence is then a query over
+what actually happened, and the floor is the point where the rate crosses the
+quality bar. This is the same arrangement as the cost model of section 12.4, and
+for the same reason: a number that a person wrote once is a guess by the
+following week.
+
+A refusal at this gate is recorded as a `semantic` failure. The taxonomy of
+section 9.7 is a closed list, and `semantic` is the entry for "the meaning was
+rejected". The gate is a cheap substitute for the critic, so it belongs in the
+same place in the count.
 
 ### 6.6 The capability gap
 
@@ -731,7 +800,19 @@ Do not put 40 tool definitions in the prompt of a 1.2B model. Use two stages:
 1. An embedding search or BM25 search over the tool descriptions.
 2. Inject the top two or three schemas into the dispatcher prompt.
 
+3. Build the grammar over **only** those two or three schemas.
+
 This keeps the prompt small. A small prompt is fast on a CPU and reduces error.
+
+Step 3 is not an optimisation. Steps 1 and 2 make an unselected tool unlikely.
+Step 3 makes it **unreachable**: the grammar has no production for it, so the
+model cannot emit it, whatever the prompt says.
+
+The change costs nothing at run time, and it converts a prompt-engineering nudge
+into a guarantee. It also closes a path that section 11.2 would otherwise leave
+open. An instruction hidden in a log file can name a tool. If the grammar covers
+every tool, the model can write that name. If the grammar covers only the tools
+that the retrieval step selected, the name has no representation.
 
 ### 8.3 Speculative execution
 
@@ -1086,6 +1167,41 @@ count them again with code and compare. If the two disagree, trust the code.
 
 Use level 5 rarely. A critic model has the same weakness as the model it checks.
 
+### 10.2.1 Abstention is a contract, not a hope
+
+A reducer must be able to say "not present" for each field, and the schema must
+permit it. If the schema does not accept `null`, the only way to satisfy the
+schema is to produce a value, so the contract itself asks for invention.
+
+Two rules follow, and both are cheap.
+
+**Mark the fields that are copied.** A schema field is either **extractive**, so
+its value comes from the input word for word, or **derived**, so it is computed
+from the whole window. Write which one it is:
+
+```json
+"host": { "type": ["string", "null"], "x-extractive": true }
+```
+
+**Check the span at level 4.** For an extractive field that is not `null`, the
+value must appear in the input that the provider was given. A value with no such
+span was invented, whatever else is true about it. A `null` is never checked,
+because `null` is the honest answer and has nothing to justify.
+
+This is level 4 and not level 3. Level 3 tests a value against itself and needs
+nothing else. A span test needs the source, and a second path to the source is
+what level 4 is. The difference is not bookkeeping. Section 2.1 of the companion
+note reads a `crosscheck` failure as the dangerous kind, because the provider
+lied in a way that looks correct at every later stage. An invented host name is
+exactly that, and a `range` label would understate it.
+
+A derived field has no span, so do not check one. `error_count` is a number that
+appears nowhere in the log it counts.
+
+**Test it.** About one third of the fixtures for each schema must have absent
+fields, with `null` as the expected value. Every field needs at least one such
+fixture: a model that abstains well on a string can still invent a boolean.
+
 ### 10.3 The reproducibility contract
 
 Pin these items for every step:
@@ -1172,6 +1288,37 @@ This is a real advantage over a single large agent, where the same context
 holds both the untrusted text and the tool definitions. State the invariant in
 the code, and add a test that fails if a reducer output can reach the
 dispatcher without validation.
+
+#### The system channel carries facts, never instructions
+
+A provider call can have a system slot that holds the state of the environment:
+the date, the locale, the device, the battery.
+
+Make it a **typed fact record**, and never prose. Never put anything in it that
+a tool produced. A record has fields, and a field for the date is not a field
+for an instruction, so an injected instruction has nowhere in the slot to go.
+
+Some models are trained so that an instruction in the system slot does not steer
+them. Treat that as unverified until the adversarial fixtures of section 11.5
+say otherwise. A claim about training is a claim about a model, and section 10.1
+is about the cost of believing one.
+
+Add a fourth kind of poisoned fixture when the system channel exists: an
+instruction inside the environment record itself.
+
+#### The principle behind these three
+
+Sections 8.2, 10.2.1 and 11.2 use one method:
+
+> **Narrow the output space until the attack has no representation.**
+
+A reducer cannot emit a tool call, because the schema has no field for one. A
+model cannot name an unselected tool, because the grammar has no production for
+it. A model cannot invent a host name, because the value must have a span in the
+input.
+
+None of the three depends on a model behaving well. That is what makes them
+worth more than a prompt that asks for the same thing.
 
 ### 11.3 One execution world
 
@@ -1374,8 +1521,8 @@ measured problem.
 | v0 | The three measurements of section 12. | You have the table of section 12.1. |
 | v0b | *Optional.* The DeepSeek Harness spike of appendix D.4. | You know whether an existing harness saves more than it costs. |
 | v1 | Ledger, loop, one tool, one capability, **one `code` provider only**. | A three-step task runs end to end and replays identically. No model is involved. |
-| v2 | The `gguf` adapter. A second provider for the **same** capability. | You can swap code for model in the manifest, with no change to the runtime. |
-| v3 | Provider selection policy, budgets, tool manifests, JIT tool retrieval. | Ten tools, and the prompt stays under 500 tokens. |
+| v2 | The `gguf` adapter. A second provider for the **same** capability. The system channel of 11.2. | You can swap code for model in the manifest, with no change to the runtime. The system slot is a typed record, and a poisoned fixture in it changes nothing. |
+| v3 | Provider selection policy, budgets, tool manifests, JIT tool retrieval **with the grammar built over the retrieved subset**. | Ten tools, and the prompt stays under 500 tokens. An unselected tool cannot be emitted, and a test shows that the grammar and not the prompt is what stops it. |
 | v4 | Planner, retries, the escalation ladder, capability gaps. | A task with a failing step still returns a useful answer. |
 | v5 | The three probe tasks of section 17. | All three run with manifest changes only. |
 | v6 | Fact store, episodic index (9.3), failure memory (9.7), cost model (12.4), trajectory cache. | A repeated task uses the cache and is measurably faster. The planner avoids a dead end it met before, and the policy prices providers from measurement. |
@@ -1546,6 +1693,12 @@ harness/
 | Cold load | A model load when the pages are not in the page cache. |
 | Warm load | A model load when the pages are in the page cache. |
 | Pin | To fix a version or a hash so that a step is repeatable. |
+| Extractive field | A schema field whose value is copied from the input word for word. |
+| Derived field | A schema field computed from the whole input, with no span in it. |
+| Span | The place in the input where an extractive value appears. |
+| Abstention | A provider reporting `null` because the input does not hold the value. |
+| Confidence gate | A refusal to commit a result that the provider scored below the floor. |
+| System channel | The typed record of environment state given to a provider. |
 
 ---
 
@@ -1684,3 +1837,62 @@ system relaxes it. Neither does it touch the contract in section 10.3.
 Read FreeToken as a neighbour, not as a competitor. It answers "what can one
 person run at home". This design answers "what can run unattended, on a
 power budget, in twenty places, and prove afterwards what it did".
+
+---
+
+## Appendix F — Comparison with Needle 2
+
+Needle 2 (Cactus Compute) is a 26M-parameter encoder for single-shot function
+calling. It is reported to beat FunctionGemma 270M, Qwen 600M, Granite 350M and
+LFM2.5 350M at that one task, and to be unable to plan a multi-step task,
+resolve an ambiguous reference, or generalise to an unseen tool schema.
+
+That combination is the reason it belongs in this document. It fits the role
+split of section 6 exactly: it can serve `route@1`, and it must never serve
+`plan@1`. A capability model is what makes a component like this usable at all.
+
+### F.1 What this document takes from it
+
+Four ideas, adopted as design changes whether or not the model is used.
+
+1. **Abstention as a contract.** Needle refuses an unserveable request with an
+   empty call, and omits an optional field with no evidence rather than guessing
+   it. Section 10.2.1 makes this a schema rule and a level 4 check.
+2. **Confidence before the commit.** Needle returns a calibrated score per call
+   and escalates below it instead of executing. Section 6.5 adds the gate, with
+   the floor measured rather than chosen.
+3. **A grammar over the retrieved tools.** Needle embeds every tool schema once,
+   injects only the top few, and rebuilds the grammar over that subset. Section
+   8.2 adopts it, which turns a soft constraint into a hard one.
+4. **A system channel of facts.** Needle's system turn carries environment state
+   and is trained so that instructions there do not steer it. Section 11.2 takes
+   the convention and treats the training claim as unverified.
+
+The three that narrow an output space share one method, and section 11.2 now
+states it as a principle.
+
+### F.2 What does not transfer
+
+| | Needle 2 | This design |
+|---|---|---|
+| Weight format | `.cact`, its own engine | GGUF on llama.cpp |
+| Provisioning | The engine is fetched on first use | P9: nothing over the network at run time |
+| Output | Structured calls only, no free text | `answer@1` needs free text |
+| Context | About 256 tokens | A reducer reads long tool output |
+
+The provisioning line is the one that matters, and it is not a detail. A model
+that downloads its own engine is not usable on a box in a cupboard until section
+16 question 3 has an answer. That question is still open.
+
+The window and the lack of free text are limits, not faults. They say what the
+component is for. It cannot serve `answer@1`, and it cannot reduce a long log.
+
+### F.3 What to do about it
+
+Test Needle as a `route@1` candidate in the first bake-off of section 7 of the
+companion note. Measure it the same way as every other candidate: pass rate at a
+stated p90 cost, ranked by where the failures land.
+
+Do not write the `.cact` adapter before the `gguf` adapter exists. Section 15
+puts `gguf` at v2 for a reason, and a second weight format before the first one
+works is a way to learn nothing twice.

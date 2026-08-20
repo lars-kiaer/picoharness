@@ -30,7 +30,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .adapters.base import ProviderError
+from .adapters.base import ProviderError, Reduced
 from .budget import BreakerState, Budget
 from .hooks import Hooks, Rejected
 from .ledger import Ledger, ProviderInput, assert_visible, project
@@ -209,24 +209,47 @@ class Runtime:
 
             tried.add(provider.id)
             attempt = self.breakers.retries.get(step.id, 0) + 1
-            record, duration_ms, error = self._call(step, tool, provider, raw)
+            reduced, duration_ms, error = self._call(step, tool, provider, raw)
 
-            if error is None and record is not None:
-                result = self._validate(record, tool, raw)
+            if error is not None or reduced is None:
+                kind = "tool_error"
+            elif (below := self._below_confidence_floor(provider, reduced)) is not None:
+                # Escalate before the work is used, rather than after a failure.
+                # Cheaper than the critic at ladder level 5, and it needs no
+                # second model. Recorded as `semantic` because the closed
+                # taxonomy of section 9.7 has one bucket for "the meaning was
+                # rejected", and a confidence gate is a cheap stand-in for it.
+                error, kind = below, "semantic"
+            else:
+                result = self._validate(reduced.record, tool, raw)
                 if result.ok:
+                    try:
+                        committed = Reduced.of(self.hooks.run("on_commit", reduced))
+                    except Rejected as rejected:
+                        self.ledger.append(
+                            rejected.event_type, step=step.id, tool=tool.name,
+                            provider=provider.id, schema=tool.output_schema,
+                            attempt=attempt, **rejected.fields,
+                        )
+                        self.budget.charge(wall_ms=duration_ms)
+                        if (
+                            self.breakers.note_retry(step.id)
+                            > self.budget.breakers.max_retries_per_step
+                        ):
+                            return False
+                        continue
                     self.ledger.append(
                         "fact_added",
                         step=step.id,
                         provider=provider.id,
                         schema=tool.output_schema,
                         duration_ms=round(duration_ms, 2),
-                        fact=self.hooks.run("on_commit", record),
+                        confidence=committed.confidence,
+                        fact=committed.record,
                     )
                     self.budget.charge(wall_ms=duration_ms)
                     return True
                 error, kind = result.error(), result.kind
-            else:
-                kind = "tool_error"
 
             self.ledger.append(
                 "validation_failed" if kind != "tool_error" else "tool_failed",
@@ -245,9 +268,26 @@ class Runtime:
                 )
                 return False
 
+    def _below_confidence_floor(self, provider: Any, reduced: Reduced) -> str | None:
+        """Why this result must not be committed, or None. Section 6.5.
+
+        A provider that returns no confidence is not gated. That is deliberate:
+        a missing score is not a low score, and treating it as one would demote
+        every parser in the system.
+        """
+        floor = provider.manifest.get("confidence_floor")
+        if floor is None or reduced.confidence is None:
+            return None
+        if reduced.confidence >= floor:
+            return None
+        return (
+            f"confidence {reduced.confidence:.2f} is below the declared floor "
+            f"{floor} (from {reduced.how or 'an unnamed source'})"
+        )
+
     def _call(
         self, step: Step, tool: Tool, provider: Any, raw: Payload
-    ) -> tuple[dict[str, Any] | None, float, str | None]:
+    ) -> tuple[Reduced | None, float, str | None]:
         """Run one provider, having first proved the ledger explains its input."""
         from .adapters.code import time_call
 
@@ -257,7 +297,7 @@ class Runtime:
             capability=tool.reducer,
             schema_id=tool.output_schema,
             blob_reader=self.ledger.read_blob,
-            max_trust_in=provider.max_trust_in,  # type: ignore[arg-type]
+            max_trust_in=provider.max_trust_in(tool.reducer),  # type: ignore[arg-type]
         )
         # Section 4.5. `held` carries what the runtime has in hand; `rebuilt`
         # carries only what the ledger can account for. The facts are taken from
@@ -280,7 +320,7 @@ class Runtime:
             record, duration_ms = time_call(
                 lambda: adapter.run(handle, rebuilt.payload, tool.output_schema)
             )
-            return record, duration_ms, None
+            return Reduced.of(record), duration_ms, None
         except ProviderError as exc:
             return None, 0.0, str(exc)
         finally:
