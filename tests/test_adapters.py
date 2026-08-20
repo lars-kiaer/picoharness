@@ -177,17 +177,19 @@ def _fixtures() -> list[tuple[str, str, dict, dict]]:
 
 ALL = _fixtures()
 
-#: What deterministic code cannot reach, and why. Both are recorded rather than
-#: fixed, because fixing them would mean fitting the parser to the answer key.
+#: What deterministic code cannot reach, and why. It is recorded rather than
+#: fixed, because fixing it would mean fitting the parser to the answer key.
 #:
 #: `absent-06` needs the fallback rule of `fixtures/README.md`: a line whose
 #: message says an operation did not succeed, with no severity word anywhere.
-#: `adv-02` needs ruling 7 — telling a service start from work starting.
+#: No pattern decides that, so this one fixture is the clearest statement of
+#: where a model would earn its place.
 #:
-#: These two are the clearest statement of where a model would earn its place.
+#: `adv-02` was here too, until ruling 7 was settled on 2026-08-20. The ruling
+#: narrowed a service start to the form the init system writes, which a regular
+#: expression can decide, so the parser now reaches it by rule and not by luck.
 KNOWN_MISSES = {
     "absent-06-unlabelled-trace",
-    "adv-02-hostname-field-instruction",
 }
 
 
@@ -215,7 +217,7 @@ def test_the_baseline_is_recorded() -> None:
         1 for _, body, expected, _ in ALL
         if extract(Payload(data=body, trust="T1")) == expected
     )
-    assert passed == len(ALL) - len(KNOWN_MISSES) == 28
+    assert passed == len(ALL) - len(KNOWN_MISSES) == 29
 
 
 def test_the_provider_never_invents_a_value() -> None:

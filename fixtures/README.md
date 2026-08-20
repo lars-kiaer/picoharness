@@ -108,8 +108,17 @@ succeed. Only `absent-06` uses that last case.
 7. **`service_restarted`** — apply in this order. `true` if the window records
    a service start or a restart. `false` if the window carries records from a
    named program or unit, and none of them is a start or a restart. `null` if
-   the window carries no service records at all. A cron job that runs a command
-   is not a service start.
+   the window carries no service records at all.
+
+   A start record is one whose message **begins** with a lifecycle word:
+   `Started`, `Starting`, `Stopped`, `Stopping`, `Reloaded`, `Restarting`, or a
+   scheduled restart. Case does not matter, and the tag does not have to be
+   there: `journalctl -o cat` removes the tag and keeps the message. A start
+   word later in the message belongs to a program that reports its own work.
+   `checkpoint starting: time`, `starting run id=...`, `CTRL-EVENT-SCAN-STARTED`
+   and `relay started, 2 peers configured` are all work, and none of them is a
+   service start. A cron job that runs a command is not one either, because
+   `(root) CMD (...)` does not begin with a lifecycle word.
 
 ## The cross-check
 
@@ -227,32 +236,36 @@ still a per-model property.
 6. Never change a schema in place. A new field is `log_summary@3`, and the old
    fixtures keep their version.
 
-## Seven rulings that a person should confirm
+## The seven rulings, settled 2026-08-20
 
 The section "How each field is decided" states conventions. Seven of them are
-choices and not facts. A different grader can disagree with each one, and would
-then mark a good model wrong. Read these before you trust a pass rate.
+choices and not facts, so each one is written down here with its reason. A
+different grader can still disagree, but now there is something to disagree
+with.
 
-| # | Fixture | The ruling taken | The defensible alternative |
-|---|---------|------------------|----------------------------|
-| 1 | `absent-04-truncated-window` | A truncation notice makes `error_count` null. The other fields are answered from the visible head. | `max_severity` and `service_restarted` are also unknown for the missing tail, so three fields go null. This makes the fixture much harder. |
-| 2 | `absent-07-scrubbed-message` | A removed message body makes `first_error` null. | Copying the marker `ERROR [message removed by log-scrub, rule pci-dss-3.4]` is faithful extraction of what the line says. |
-| 3 | `absent-03-kernel-ring` | `first_error_at` keeps the brackets and the inner spaces: `[   12.443112]`. | The brackets are syntax, not part of the time stamp. |
-| 4 | Any multi-line event | `error_count` counts lines, not incidents. A stack trace over five lines scores 5. | One failing disk is one error, whatever the format spends on it. |
-| 5 | `normal-20`, and cron generally | A cron job that runs a command is not a service start. `Starting <unit>...` is. | Any unit activity is a lifecycle event. `normal-20` depends on this ruling. |
-| 6 | The set as a whole | The longest input is about 9 kB. | Section 3.2 asks for measurements at about 16000 tokens. This set does not reach that, so no claim about degradation with length can be made from it yet. |
+Rulings 1 and 7 were confirmed by a person. The other five were taken on a
+recommendation and can be overturned. None of them may be changed after the
+first evaluation run: a convention changed later invalidates every pass rate
+measured under the old one.
 
-| 7 | `adv-02`, and `normal-07`, `-08`, `-11` | `relay started, 2 peers configured` records a service start. `checkpoint starting: time`, `starting run id=...` and `CTRL-EVENT-SCAN-STARTED` do not. | The difference is the subject, not the wording: a service started, against a piece of work starting. No pattern separates them, so rule 7 needs either a narrower definition or a model. |
+| # | Fixture | The ruling | Why this one |
+|---|---------|------------|--------------|
+| 1 | `absent-04-truncated-window` | A truncation notice makes `error_count` null. Every other field is answered from the visible head. | All seven fields are defined over the text and not over the world: `max_severity` is the highest severity **the input states**. A count over an incomplete window cannot be derived at all, and that is the sharp case. Nulling the severity as well would put a second, world-based standard into a text-based schema. |
+| 2 | `absent-07-redacted-message` | A removed message body makes `first_error` null. The line is still an error line, so it keeps its time stamp and its place in the count. | `null` means the input does not contain the value, and it does not. Copying the marker would report the error as "message removed by log-scrub", which is false, and every summary built on it would carry that forward. |
+| 3 | `absent-03-dmesg-ring` | `first_error_at` keeps the brackets and the inner spaces: `[   12.443112]`. | The field says "copied exactly as the input writes it". Taking the leading token as written needs no rule for each format. |
+| 4 | Any multi-line event | `error_count` counts lines and not incidents. A stack trace over five lines scores 5. | Lines are what `grep -c` counts, and that is what makes level 4 of the ladder affordable for this schema. Counting incidents needs judgement, which means a model, which removes the cheap cross-check. |
+| 5 | `normal-10`, and cron generally | A cron job that runs a command is not a service start. | It follows from ruling 7. `CRON[3301]: (backup) CMD (...)` does not begin with a lifecycle word. |
+| 6 | The set as a whole | The longest input stays at about 9 kB. | This is a limit and not a convention: no claim about degradation with input length can be made from this set. Long fixtures are expensive to derive by hand, and the measurement they serve belongs with the first model. |
+| 7 | `adv-02`, and `normal-07`, `-08`, `-11` | A service start is a record whose message **begins** with a lifecycle word. `relay started, 2 peers configured` is work, not a start. | The alternative was a judgement no rule can express — the subject of the sentence — which would leave one field open to a grader's opinion for ever. The narrow form is what the init system writes and what a regular expression can decide. `adv-02` changed from `true` to `false` when this was settled. |
 
-Ruling 7 was found by writing the code provider, not by reading the rules. It is
-the one place where `picoharness.providers.log_summary` cannot reach the answer
-key by any principled rule, and it is therefore the clearest single example of
-where a model would earn its place.
+Ruling 7 was found by writing the code provider and not by reading the rules.
+Settling it left exactly one fixture that deterministic code cannot reach:
+`absent-06-unlabelled-trace`, where the input states no severity anywhere and an
+error line has to be recognised from what the message says happened. That one
+fixture is now the clearest example of where a model would earn its place, and
+it is a better example than `adv-02` was, because it turns on meaning and not on
+wording.
 
-Rulings 1 and 2 matter most. Both fixtures offer something that looks like an
-answer — a partial count, and a redaction marker — and section 7.5 says a model
-that supplies a plausible value for an absent field must not be used, whatever
-its pass rate is. If the ruling is wrong, that rule punishes the wrong models.
-
-Decide these before the first evaluation run, not after. A convention changed
-later invalidates every pass rate measured under the old one.
+The baseline is therefore **29 of 30** for `picoharness.providers.log_summary`,
+asserted in `tests/test_adapters.py` so that a change in either direction has to
+be deliberate.

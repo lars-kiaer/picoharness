@@ -25,7 +25,10 @@ into the memory layers that were built before it.
 | v7 security suite, sandbox | The world seam exists; `LocalWorld` runs no subprocess on purpose |
 
 Also done, out of order: the 30-fixture set for `extract@1`, a `code` provider
-that scores **28 of 30** against it, and the validation ladder at levels 2–4.
+that scores **29 of 30** against it, and the validation ladder at levels 2–4.
+The one it cannot reach is `absent-06`, where an error line must be recognised
+with no severity word anywhere in the input. That is the single clearest case
+for a model in the whole set.
 
 The core is at **1,809 lines of code** against the 2,000-line budget of §17,
 counting `src/picoharness/*.py` and `adapters/`, but not `providers/` (189) or
@@ -36,9 +39,11 @@ add a special case to the runtime, ask whether it belongs in a manifest.
 
 1. **v2 needs Linux.** `wsl --install -d Ubuntu` — only `docker-desktop` is
    installed, which is not a general-purpose distro. Or wait for the board.
-2. **Seven rulings in `fixtures/README.md` are unsettled** and should be decided
-   *before* the first evaluation run. A convention changed afterwards invalidates
-   every pass rate measured under the old one.
+2. **The seven rulings in `fixtures/README.md` are settled** (2026-08-20). Do
+   not reopen one after the first evaluation run: a convention changed later
+   invalidates every pass rate measured under the old one. Ruling 7 narrowed a
+   service start to the form the init system writes, which moved `adv-02` from
+   `true` to `false` and took the code baseline from 28 to 29.
 3. **CI runs and passes.** Five runs on Ubuntu against 3.11 and 3.14, green,
    the newest on `3a4d997` (checked 2026-08-20 through the GitHub API, because
    `gh` is not installed on this box). The declared floor really does execute

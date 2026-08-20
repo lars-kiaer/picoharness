@@ -5,5 +5,5 @@
   "first_error_at": "2026-08-18T04:13:02.774Z",
   "service": "relayd",
   "max_severity": "error",
-  "service_restarted": true
+  "service_restarted": false
 }
