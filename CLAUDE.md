@@ -3,18 +3,48 @@
 A serial micro-agent harness for a CPU-only edge box. The state is a file, models
 are pure functions over it, and one provider runs at a time.
 
-Full design: `docs/serial-micro-agent-harness.md` (v0.7).
+Full design: `docs/serial-micro-agent-harness.md` (v0.9).
 Model and runtime choices: `docs/model-evaluation-and-runtime.md`.
 Read the section named in a rule before you argue with the rule.
 
 ## Where the project actually is
 
-Implemented: the **memory layers only** — `EpisodicIndex`, `FailureMemory`,
-`CostModel`. That is stage **v6** of the build plan in §15. Stages v0–v5 do not
-exist yet, so **nothing in this repository writes a ledger**; the memory layers
-read hand-written samples in `memory/samples.py`.
+**v1 is complete and v6 was built first.** A three-step task runs end to end and
+replays identically, with no model involved, and the ledger it writes ingests
+into the memory layers that were built before it.
 
-The runtime is the next thing to build, in the model-free form §15 insists on.
+| Stage | State |
+|---|---|
+| v0 measurements | Waiting on hardware. Nothing measured yet |
+| **v1** ledger, loop, `code` provider | **Done.** `tests/test_runtime.py` is the exit test |
+| v2 `gguf` adapter, swap test, system channel | **Next.** First thing that needs Linux |
+| v3 selection policy, budgets, JIT tools | Filters have marked attachment points in `registry.select()` |
+| v4 planner, escalation | `call_planner()` is an open gap in `runtime.run()`, deliberately not stubbed |
+| v5 the three probe tasks | Not started |
+| v6 memory layers | Done, and now has a real producer |
+| v7 security suite, sandbox | The world seam exists; `LocalWorld` runs no subprocess on purpose |
+
+Also done, out of order: the 30-fixture set for `extract@1`, a `code` provider
+that scores **28 of 30** against it, and the validation ladder at levels 2–4.
+
+The core is at about **1,720 lines of code** against the 2,000-line budget of
+§17. There is room for v2, and not unlimited room. When tempted to add a special
+case to the runtime, ask whether it belongs in a manifest.
+
+## What to pick up next
+
+1. **v2 needs Linux.** `wsl --install -d Ubuntu` — only `docker-desktop` is
+   installed, which is not a general-purpose distro. Or wait for the board.
+2. **Seven rulings in `fixtures/README.md` are unsettled** and should be decided
+   *before* the first evaluation run. A convention changed afterwards invalidates
+   every pass rate measured under the old one.
+3. **CI has never been observed to run.** The workflow exists and targets Ubuntu
+   on 3.11 and 3.14; everything so far was verified locally on Windows/3.14. A
+   static audit found no 3.12-only syntax and no non-stdlib import besides
+   pytest, but 3.11 has not actually executed the suite. Check the first run.
+4. **§16 still has six open decisions**, and question 3 — how models arrive on
+   the box — now blocks more than it did: Needle fetches its engine over the
+   network, which collides with P9.
 
 ## Rules that decide code review
 
