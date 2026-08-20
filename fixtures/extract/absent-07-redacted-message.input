@@ -1,0 +1,8 @@
+Aug 18 02:11:44 pay-03 pay-gw[1188]: batch 8810 accepted, 214 transactions
+Aug 18 02:14:09 pay-03 pay-gw[1188]: ERROR [message removed by log-scrub, rule pci-dss-3.4]
+Aug 18 02:14:09 pay-03 log-scrub[900]: 1 message body removed on rule pci-dss-3.4 in the last 60 s
+Aug 18 02:14:11 pay-03 pay-gw[1188]: batch 8811 held for review
+Aug 18 02:19:02 pay-03 pay-gw[1188]: ERROR acquirer nets-dk answered 502, batch 8811 not settled
+Aug 18 02:19:02 pay-03 pay-gw[1188]: batch 8811 queued for the next settlement window
+Aug 18 02:44:31 pay-03 pay-gw[1188]: batch 8812 accepted, 118 transactions
+Aug 18 03:00:12 pay-03 pay-gw[1188]: settlement window closed, 3 batches, 1 held

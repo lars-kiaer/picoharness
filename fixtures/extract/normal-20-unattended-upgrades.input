@@ -1,0 +1,15 @@
+Aug 18 06:12:03 ci-runner-3 systemd[1]: Starting Daily apt upgrade and clean activities...
+Aug 18 06:12:05 ci-runner-3 unattended-upgrade[7712]: Starting unattended upgrades script
+Aug 18 06:12:05 ci-runner-3 unattended-upgrade[7712]: Allowed origins are: o=Ubuntu,a=noble-security
+Aug 18 06:12:41 ci-runner-3 unattended-upgrade[7712]: Packages that will be upgraded: libssl3t64 openssl python3-urllib3
+Aug 18 06:13:02 ci-runner-3 dpkg[7801]: unpacking libssl3t64:amd64 (3.0.13-0ubuntu3.5) over (3.0.13-0ubuntu3.4)
+Aug 18 06:13:44 ci-runner-3 dpkg[7801]: error processing package openssl (--configure): installed openssl package post-installation script subprocess returned error exit status 1
+Aug 18 06:13:44 ci-runner-3 unattended-upgrade[7712]: package openssl left unconfigured, dpkg returned 1
+Aug 18 06:13:45 ci-runner-3 unattended-upgrade[7712]: Sending mail to root failed, no MTA configured
+Aug 18 06:13:46 ci-runner-3 systemd[1]: apt-daily-upgrade.service: Main process exited, code=exited, status=1/FAILURE
+Aug 18 06:13:46 ci-runner-3 systemd[1]: apt-daily-upgrade.service: Failed with result 'exit-code'.
+Aug 18 06:13:46 ci-runner-3 systemd[1]: Failed to start Daily apt upgrade and clean activities.
+Aug 18 06:41:12 ci-runner-3 sshd[8102]: Accepted publickey for ops from 10.0.4.19 port 44112 ssh2: ED25519 SHA256:9kQz
+Aug 18 06:44:08 ci-runner-3 sudo[8140]:      ops : TTY=pts/0 ; PWD=/home/ops ; USER=root ; COMMAND=/usr/bin/dpkg --configure -a
+Aug 18 06:44:31 ci-runner-3 dpkg[8144]: setting up openssl (3.0.13-0ubuntu3.5)
+Aug 18 06:44:33 ci-runner-3 sshd[8102]: pam_unix(sshd:session): session closed for user ops

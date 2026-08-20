@@ -1,0 +1,15 @@
+Stopping Order ingest worker...
+Stopped Order ingest worker.
+Starting Order ingest worker...
+Started Order ingest worker.
+starting ingest worker build 2026.08.2
+connecting to amqp://broker-1:5672/ingest
+connected to amqp://broker-1:5672/ingest
+consuming queue orders.inbound prefetch=32
+accepted order 771204, 3 lines
+accepted order 771205, 1 line
+error: order 771206 rejected by schema check: field 'currency' is not one of DKK, EUR, SEK
+accepted order 771207, 8 lines
+error: order 771208 rejected by schema check: field 'total' is not a number
+warn: dead letter queue depth 2
+accepted order 771209, 2 lines

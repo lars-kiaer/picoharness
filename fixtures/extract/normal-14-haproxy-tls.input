@@ -1,0 +1,9 @@
+Aug 18 08:59:58 lb-02 systemd[1]: Started HAProxy Load Balancer.
+Aug 18 09:00:00 lb-02 haproxy[1401]: Proxy fe_https started.
+Aug 18 09:00:00 lb-02 haproxy[1401]: Proxy be_app started.
+Aug 18 09:03:14 lb-02 haproxy[1401]: 198.51.100.22:44118 [18/Aug/2026:09:03:14.221] fe_https~ be_app/app-1 0/0/1/44/45 200 8814 - - ---- 24/24/0/0/0 0/0 "GET /shop/basket HTTP/2.0"
+Aug 18 09:11:02 lb-02 haproxy[1401]: 203.0.113.91:51002 [18/Aug/2026:09:11:02.008] fe_https/1: SSL handshake failure
+Aug 18 09:11:04 lb-02 haproxy[1401]: 203.0.113.91:51010 [18/Aug/2026:09:11:04.771] fe_https/1: SSL handshake failure
+Aug 18 09:11:09 lb-02 haproxy[1401]: 203.0.113.91:51044 [18/Aug/2026:09:11:09.330] fe_https/1: SSL handshake failure (error:0A000102:SSL routines::unsupported protocol)
+Aug 18 09:12:40 lb-02 haproxy[1401]: 198.51.100.22:44190 [18/Aug/2026:09:12:40.114] fe_https~ be_app/app-2 0/0/1/38/39 200 8814 - - ---- 26/26/0/0/0 0/0 "GET /shop/basket HTTP/2.0"
+Aug 18 09:25:12 lb-02 certbot[9902]: Certificate not yet due for renewal; no action taken.

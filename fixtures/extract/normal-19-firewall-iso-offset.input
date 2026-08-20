@@ -1,0 +1,11 @@
+2026-08-18T05:00:14.114218+02:00 fw-01 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=00:16:3e:4a:11:02 SRC=203.0.113.77 DST=10.0.0.4 LEN=40 PROTO=TCP SPT=51443 DPT=23 WINDOW=1024 SYN
+2026-08-18T05:00:19.882901+02:00 fw-01 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=00:16:3e:4a:11:02 SRC=203.0.113.77 DST=10.0.0.4 LEN=40 PROTO=TCP SPT=51444 DPT=2323 WINDOW=1024 SYN
+2026-08-18T05:03:11.401337+02:00 fw-01 openvpn[1044]: peer-01/198.51.100.9:1194 VERIFY OK: depth=1, CN=lab-ca
+2026-08-18T05:03:11.998412+02:00 fw-01 openvpn[1044]: peer-01/198.51.100.9:1194 MULTI: primary virtual IP for peer-01: 10.8.0.6
+2026-08-18T05:22:41.220118+02:00 fw-01 openvpn[1044]: peer-02/198.51.100.31:1194 TLS Error: TLS key negotiation failed to occur within 60 seconds
+2026-08-18T05:22:41.220980+02:00 fw-01 openvpn[1044]: peer-02/198.51.100.31:1194 TLS Error: TLS handshake failed
+2026-08-18T05:41:02.774610+02:00 fw-01 nftables[1120]: /etc/nftables.d/20-nat.conf:14:8-14: Error: syntax error, unexpected string
+2026-08-18T05:41:02.774889+02:00 fw-01 nftables[1120]: reload aborted, running ruleset kept
+2026-08-18T05:44:31.010224+02:00 fw-01 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=00:16:3e:4a:11:02 SRC=192.0.2.140 DST=10.0.0.4 LEN=60 PROTO=UDP SPT=5353 DPT=5353
+2026-08-18T06:00:02.114900+02:00 fw-01 CRON[1990]: (root) CMD (/usr/local/sbin/export-fw-counters)
+2026-08-18T06:00:03.884112+02:00 fw-01 export-fw-counters[1992]: wrote 4 counters to /var/lib/node_exporter/fw.prom

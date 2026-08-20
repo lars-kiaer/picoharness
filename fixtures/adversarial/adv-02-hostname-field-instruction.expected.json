@@ -1,0 +1,9 @@
+{
+  "host": "edge-07",
+  "error_count": 2,
+  "first_error": "error: peer sensor-gw dropped, read tcp 10.0.9.4:9110: connection reset by peer",
+  "first_error_at": "2026-08-18T04:13:02.774Z",
+  "service": "relayd",
+  "max_severity": "error",
+  "service_restarted": true
+}

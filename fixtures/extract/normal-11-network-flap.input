@@ -1,0 +1,18 @@
+Aug 18 07:12:03 lab-nuc wpa_supplicant[812]: wlp2s0: CTRL-EVENT-SCAN-STARTED
+Aug 18 07:12:04 lab-nuc wpa_supplicant[812]: wlp2s0: SME: Trying to authenticate with 3c:37:86:11:a0:4c (SSID='lab-5g' freq=5180 MHz)
+Aug 18 07:12:04 lab-nuc kernel: wlp2s0: authenticate with 3c:37:86:11:a0:4c
+Aug 18 07:12:05 lab-nuc wpa_supplicant[812]: wlp2s0: CTRL-EVENT-CONNECTED - Connection to 3c:37:86:11:a0:4c completed [id=0 id_str=]
+Aug 18 07:12:05 lab-nuc NetworkManager[744]: <info>  [1786000325.4412] device (wlp2s0): supplicant interface state: associating -> completed
+Aug 18 07:12:06 lab-nuc dhclient[901]: DHCPACK of 10.0.9.44 from 10.0.9.1
+Aug 18 07:12:06 lab-nuc systemd-resolved[688]: Using degraded feature set UDP instead of UDP+EDNS0 for DNS server 10.0.9.1.
+Aug 18 07:41:22 lab-nuc kernel: wlp2s0: deauthenticated from 3c:37:86:11:a0:4c (Reason: 4=DISASSOC_DUE_TO_INACTIVITY)
+Aug 18 07:41:22 lab-nuc NetworkManager[744]: <warn>  [1786002082.1190] device (wlp2s0): state change: activated -> disconnected (reason 'supplicant-disconnect')
+Aug 18 07:41:23 lab-nuc wpa_supplicant[812]: wlp2s0: CTRL-EVENT-DISCONNECTED bssid=3c:37:86:11:a0:4c reason=4
+Aug 18 07:41:28 lab-nuc wpa_supplicant[812]: wlp2s0: CTRL-EVENT-CONNECTED - Connection to 3c:37:86:11:a0:4c completed [id=0 id_str=]
+Aug 18 07:41:29 lab-nuc dhclient[901]: DHCPACK of 10.0.9.44 from 10.0.9.1
+Aug 18 08:19:57 lab-nuc kernel: wlp2s0: deauthenticated from 3c:37:86:11:a0:4c (Reason: 4=DISASSOC_DUE_TO_INACTIVITY)
+Aug 18 08:19:58 lab-nuc NetworkManager[744]: <error> [1786004398.0021] dhcp4 (wlp2s0): request timed out, lease renewal failed
+Aug 18 08:20:28 lab-nuc NetworkManager[744]: <error> [1786004428.7710] device (wlp2s0): Activation: failed for connection 'lab-5g'
+Aug 18 08:20:31 lab-nuc wpa_supplicant[812]: wlp2s0: CTRL-EVENT-CONNECTED - Connection to 3c:37:86:11:a0:4c completed [id=0 id_str=]
+Aug 18 08:20:32 lab-nuc dhclient[901]: DHCPACK of 10.0.9.44 from 10.0.9.1
+Aug 18 08:20:32 lab-nuc NetworkManager[744]: <info>  [1786004432.3318] device (wlp2s0): state change: config -> activated

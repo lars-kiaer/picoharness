@@ -1,0 +1,9 @@
+{
+  "host": "host-b",
+  "error_count": 2,
+  "first_error": "error: volume 7 checksum mismatch, archive marked incomplete",
+  "first_error_at": "Aug  3 04:14:30",
+  "service": "archive",
+  "max_severity": "error",
+  "service_restarted": true
+}

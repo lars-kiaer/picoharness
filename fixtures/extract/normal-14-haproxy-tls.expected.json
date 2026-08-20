@@ -1,0 +1,9 @@
+{
+  "host": "lb-02",
+  "error_count": 3,
+  "first_error": "203.0.113.91:51002 [18/Aug/2026:09:11:02.008] fe_https/1: SSL handshake failure",
+  "first_error_at": "Aug 18 09:11:02",
+  "service": "haproxy",
+  "max_severity": "error",
+  "service_restarted": true
+}

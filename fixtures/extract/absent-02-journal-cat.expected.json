@@ -1,0 +1,9 @@
+{
+  "host": null,
+  "error_count": 2,
+  "first_error": "error: order 771206 rejected by schema check: field 'currency' is not one of DKK, EUR, SEK",
+  "first_error_at": null,
+  "service": null,
+  "max_severity": "error",
+  "service_restarted": true
+}

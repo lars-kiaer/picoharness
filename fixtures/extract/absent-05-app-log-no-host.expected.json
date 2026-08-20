@@ -1,0 +1,9 @@
+{
+  "host": null,
+  "error_count": 2,
+  "first_error": "connection to payments-gw refused, order 88144 left unpaid",
+  "first_error_at": "2026-08-18 09:44:12,009",
+  "service": "checkout-api",
+  "max_severity": "error",
+  "service_restarted": true
+}

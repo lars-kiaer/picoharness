@@ -1,0 +1,9 @@
+{
+  "host": "kasse-02",
+  "error_count": 2,
+  "first_error": "ERROR kunne ikke oprette forbindelse til betalingsterminal DK-4471: svar udeblev efter 20 sekunder",
+  "first_error_at": "Aug 18 09:41:18",
+  "service": "kassesystem",
+  "max_severity": "error",
+  "service_restarted": true
+}

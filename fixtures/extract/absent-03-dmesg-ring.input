@@ -1,0 +1,17 @@
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 6.6.31-v7+ (dom@buildbot) (arm-linux-gnueabihf-gcc 12.2.0) #1791 SMP Fri Aug  1 09:12:44 UTC 2026
+[    0.000000] Machine model: Xunlong Orange Pi Lite
+[    0.211442] Memory: 421860K/524288K available (8192K kernel code, 1102K rwdata)
+[    1.884210] mmc0: new high speed SDHC card at address aaaa
+[    1.901337] mmcblk0: mmc0:aaaa SC32G 29.7 GiB
+[    2.114982] EXT4-fs (mmcblk0p2): mounted filesystem with ordered data mode
+[    9.442017] sun8i-emac 1c30000.ethernet eth0: Link is Up - 100Mbps/Full - flow control off
+[   12.443112] mmc0: error -110 whilst initialising SD card
+[   12.443198] mmcblk0: error -110 sending status command, retrying
+[   12.881004] mmcblk0: error -110 sending status command, retrying
+[   13.114772] blk_update_request: I/O error, dev mmcblk0, sector 4210688 op 0x0:(READ) flags 0x80700
+[   13.115003] EXT4-fs (mmcblk0p2): ext4_end_bio:343: I/O error 10 writing to inode 8214
+[   18.004112] mmc0: card aaaa removed
+[   18.220441] mmc0: new high speed SDHC card at address aaaa
+[   18.240117] mmcblk0: mmc0:aaaa SC32G 29.7 GiB
+[   19.114002] EXT4-fs (mmcblk0p2): re-mounted. Opts: (null)

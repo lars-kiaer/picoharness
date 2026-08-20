@@ -1,0 +1,9 @@
+{
+  "host": "api-02",
+  "error_count": 2,
+  "first_error": "error: delivery 8814 from partner-a rejected, signature does not match the shared secret",
+  "first_error_at": "Aug 18 22:07:55",
+  "service": "webhook",
+  "max_severity": "error",
+  "service_restarted": true
+}

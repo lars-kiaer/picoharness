@@ -1,0 +1,18 @@
+Aug 18 00:57:02 store-04 smartd[688]: Device: /dev/sdc [SAT], SMART Usage Attribute: 190 Airflow_Temperature_Cel changed from 71 to 70
+Aug 18 01:14:41 store-04 kernel: ata4.00: exception Emask 0x0 SAct 0x7fffffff SErr 0x0 action 0x0
+Aug 18 01:14:41 store-04 kernel: ata4.00: irq_stat 0x40000008
+Aug 18 01:14:41 store-04 kernel: ata4.00: failed command: READ FPDMA QUEUED
+Aug 18 01:14:41 store-04 kernel: ata4.00: status: { DRDY ERR }
+Aug 18 01:14:41 store-04 kernel: sd 3:0:0:0: [sdc] tag#18 FAILED Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+Aug 18 01:14:41 store-04 kernel: sd 3:0:0:0: [sdc] tag#18 Sense Key : Medium Error [current]
+Aug 18 01:14:42 store-04 kernel: md/raid:md0: read error not correctable (sector 1284801928 on sdc1).
+Aug 18 01:14:42 store-04 kernel: md/raid:md0: Disk failure on sdc1, disabling device.
+Aug 18 01:14:42 store-04 kernel: md/raid:md0: Operation continuing on 3 devices.
+Aug 18 01:14:43 store-04 mdadm[721]: Fail event detected on md device /dev/md0, component device /dev/sdc1
+Aug 18 01:14:43 store-04 mdadm[721]: RebuildStarted event detected on md device /dev/md0
+Aug 18 01:14:43 store-04 kernel: md: recovery of RAID array md0
+Aug 18 03:48:19 store-04 kernel: md: md0: recovery done.
+Aug 18 03:48:19 store-04 mdadm[721]: RebuildFinished event detected on md device /dev/md0
+Aug 18 03:48:20 store-04 mdadm[721]: SpareActive event detected on md device /dev/md0, component device /dev/sde1
+Aug 18 04:00:01 store-04 CRON[9911]: (root) CMD (/usr/share/mdadm/checkarray --cron --all --idle --quiet)
+Aug 18 06:57:02 store-04 smartd[688]: Device: /dev/sdc [SAT], SMART Usage Attribute: 190 Airflow_Temperature_Cel changed from 70 to 72

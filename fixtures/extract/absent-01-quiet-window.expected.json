@@ -1,0 +1,9 @@
+{
+  "host": "store-01",
+  "error_count": 0,
+  "first_error": null,
+  "first_error_at": null,
+  "service": null,
+  "max_severity": "warning",
+  "service_restarted": true
+}

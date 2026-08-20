@@ -1,0 +1,9 @@
+{
+  "host": "web-01",
+  "error_count": 5,
+  "first_error": "EXT4-fs error (device nvme0n1p2): __ext4_find_entry:1683: inode #524290: comm php-fpm: reading directory lblock 0",
+  "first_error_at": "Aug 18 11:38:47",
+  "service": "kernel",
+  "max_severity": "error",
+  "service_restarted": true
+}

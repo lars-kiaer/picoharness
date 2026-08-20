@@ -1,0 +1,9 @@
+{
+  "host": "app-11",
+  "error_count": 6,
+  "first_error": "fatal dial amqp://broker-1:5672/ingest: i/o timeout after 30s",
+  "first_error_at": "Aug 13 21:04:33",
+  "service": "ingest",
+  "max_severity": "critical",
+  "service_restarted": true
+}

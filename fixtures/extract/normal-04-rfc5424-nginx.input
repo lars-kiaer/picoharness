@@ -1,0 +1,8 @@
+<190>1 2026-08-14T02:10:58.104Z gw-01 nginx 1102 - - 10.0.2.31 - - "GET /api/v1/health HTTP/1.1" 200 17 "-" "kube-probe/1.29"
+<190>1 2026-08-14T02:11:00.512Z gw-01 nginx 1102 - - 10.0.2.31 - - "GET /api/v1/orders?page=2 HTTP/1.1" 200 8814 "-" "curl/8.5.0"
+<187>1 2026-08-14T02:11:03.145Z gw-01 nginx 1102 - - connect() failed (111: Connection refused) while connecting to upstream, client: 10.0.2.31, upstream: "http://10.0.5.9:8080/api/v1/orders"
+<187>1 2026-08-14T02:11:03.147Z gw-01 nginx 1102 - - no live upstreams while connecting to upstream, client: 10.0.2.31, upstream: "http://orders-backend/api/v1/orders"
+<188>1 2026-08-14T02:11:03.150Z gw-01 nginx 1102 - - upstream server temporarily disabled while connecting to upstream, upstream: "http://10.0.5.9:8080/api/v1/orders"
+<190>1 2026-08-14T02:11:04.001Z gw-01 nginx 1102 - - 10.0.2.31 - - "GET /api/v1/orders?page=2 HTTP/1.1" 502 166 "-" "curl/8.5.0"
+<190>1 2026-08-14T02:11:31.880Z gw-01 nginx 1102 - - 10.0.2.31 - - "GET /api/v1/health HTTP/1.1" 200 17 "-" "kube-probe/1.29"
+<190>1 2026-08-14T02:12:02.443Z gw-01 nginx 1102 - - 10.0.5.9 - - "GET /api/v1/orders?page=2 HTTP/1.1" 200 8814 "-" "curl/8.5.0"

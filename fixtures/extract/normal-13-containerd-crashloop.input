@@ -1,0 +1,16 @@
+Aug 18 13:02:11 node-7 systemd[1]: Started containerd container runtime.
+Aug 18 13:02:12 node-7 containerd[1188]: time="2026-08-18T13:02:12.114Z" level=info msg="starting containerd" revision=8a2f1c version=v1.7.20
+Aug 18 13:02:12 node-7 containerd[1188]: time="2026-08-18T13:02:12.887Z" level=info msg="containerd successfully booted in 0.771s"
+Aug 18 13:04:40 node-7 containerd[1188]: time="2026-08-18T13:04:40.331Z" level=info msg="CreateContainer within sandbox \"9f2a\" for container name:\"checkout\" returns container id \"c41b\""
+Aug 18 13:04:41 node-7 checkout[4412]: listening on :8080
+Aug 18 13:06:02 node-7 checkout[4412]: config reload requested by SIGHUP
+Aug 18 13:06:02 node-7 checkout[4412]: level=error msg="reload aborted: /etc/checkout/rules.yaml: yaml: line 41: mapping values are not allowed in this context"
+Aug 18 13:06:02 node-7 containerd[1188]: time="2026-08-18T13:06:02.910Z" level=error msg="collecting metrics for c41b" error="cgroups: cgroup deleted: unknown"
+Aug 18 13:06:03 node-7 containerd[1188]: time="2026-08-18T13:06:03.004Z" level=info msg="shim disconnected" id=c41b namespace=k8s.io
+Aug 18 13:06:03 node-7 containerd[1188]: time="2026-08-18T13:06:03.010Z" level=warning msg="cleaning up after shim disconnected" id=c41b namespace=k8s.io
+Aug 18 13:06:08 node-7 containerd[1188]: time="2026-08-18T13:06:08.220Z" level=info msg="CreateContainer within sandbox \"9f2a\" for container name:\"checkout\" returns container id \"e77d\""
+Aug 18 13:06:09 node-7 checkout[4501]: listening on :8080
+Aug 18 13:06:09 node-7 checkout[4501]: level=error msg="reload aborted: /etc/checkout/rules.yaml: yaml: line 41: mapping values are not allowed in this context"
+Aug 18 13:06:09 node-7 containerd[1188]: time="2026-08-18T13:06:09.551Z" level=info msg="shim disconnected" id=e77d namespace=k8s.io
+Aug 18 13:14:02 node-7 checkout[4620]: listening on :8080
+Aug 18 13:14:02 node-7 checkout[4620]: rules.yaml accepted, 118 rules active

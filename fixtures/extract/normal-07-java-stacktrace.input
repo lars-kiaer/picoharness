@@ -1,0 +1,12 @@
+Aug 14 23:58:11 jobs-02 batch[7781]: INFO  [pool-2-thread-1] c.e.b.NightlyRunner - starting run id=2026-08-14T23:58Z
+Aug 14 23:58:11 jobs-02 batch[7781]: INFO  [pool-2-thread-1] c.e.b.NightlyRunner - 41 tasks queued
+Aug 14 23:59:02 jobs-02 batch[7781]: INFO  [pool-2-thread-3] c.e.b.ExportTask - exported 12844 rows to /srv/export/orders.csv
+Aug 15 00:02:17 jobs-02 batch[7781]: WARN  [pool-2-thread-2] c.e.b.RetryPolicy - attempt 2 of 3 for task reconcile-ledger
+Aug 15 00:02:47 jobs-02 batch[7781]: ERROR [pool-2-thread-2] c.e.b.NightlyRunner - task reconcile-ledger aborted after 3 attempts
+Aug 15 00:02:47 jobs-02 batch[7781]: java.sql.SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 30000ms.
+Aug 15 00:02:47 jobs-02 batch[7781]: #011at com.zaxxer.hikari.pool.HikariPool.createTimeoutException(HikariPool.java:696)
+Aug 15 00:02:47 jobs-02 batch[7781]: #011at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:197)
+Aug 15 00:02:47 jobs-02 batch[7781]: #011at com.example.batch.ReconcileLedger.run(ReconcileLedger.java:88)
+Aug 15 00:02:47 jobs-02 batch[7781]: #011at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+Aug 15 00:02:48 jobs-02 batch[7781]: INFO  [pool-2-thread-2] c.e.b.NightlyRunner - task reconcile-ledger marked for manual review
+Aug 15 00:07:55 jobs-02 batch[7781]: INFO  [pool-2-thread-1] c.e.b.NightlyRunner - run finished, 40 of 41 tasks complete

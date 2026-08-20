@@ -1,0 +1,10 @@
+Aug 18 05:00:11 ntp-edge chronyd[644]: Selected source 192.0.2.30 (pool.ntp.example)
+Aug 18 05:00:11 ntp-edge chronyd[644]: System clock wrong by 41.882014 seconds
+Aug 18 05:00:52 ntp-edge chronyd[644]: System clock was stepped by 41.882014 seconds
+Aug 18 05:00:52 ntp-edge systemd[1]: Starting Time & Date Service...
+Aug 18 05:00:53 ntp-edge systemd[1]: Started Time & Date Service.
+Aug 18 05:02:10 ntp-edge chronyd[644]: Source 192.0.2.31 replaced with 192.0.2.32 (pool.ntp.example)
+Aug 18 05:06:44 ntp-edge kernel: hrtimer: interrupt took 4118 ns
+Aug 18 05:11:19 ntp-edge collectd[801]: write_prometheus plugin: error: sample timestamp 1786021253 precedes previous sample
+Aug 18 05:14:02 ntp-edge chronyd[644]: Selected source 192.0.2.32 (pool.ntp.example)
+Aug 18 05:14:02 ntp-edge chronyd[644]: System clock synchronised, offset 0.000412 seconds

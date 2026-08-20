@@ -1,0 +1,12 @@
+Aug 17 01:00:01 backup-01 CRON[3301]: (backup) CMD (/usr/local/sbin/nightly-backup --target /srv/vault)
+Aug 17 01:00:02 backup-01 nightly-backup[3303]: snapshot vault-2026-08-17 created
+Aug 17 01:00:02 backup-01 nightly-backup[3303]: syncing 41 GiB to vault-mirror.internal:/pool/backup
+Aug 17 01:14:38 backup-01 nightly-backup[3303]: rsync error: unexplained error (code 255) at io.c(231) [sender=3.2.7]
+Aug 17 01:14:38 backup-01 nightly-backup[3303]: transfer failed after 878s, 12.1 GiB of 41 GiB sent
+Aug 17 01:14:39 backup-01 CRON[3301]: (CRON) info (No MTA installed, discarding output)
+Aug 17 02:00:01 backup-01 CRON[3410]: (root) CMD (/usr/local/sbin/prune-snapshots --keep 14)
+Aug 17 02:00:14 backup-01 prune-snapshots[3412]: removed 3 snapshots, 112 GiB reclaimed
+Aug 17 03:00:01 backup-01 CRON[3560]: (backup) CMD (/usr/local/sbin/nightly-backup --target /srv/vault --resume)
+Aug 17 03:00:02 backup-01 nightly-backup[3562]: resuming vault-2026-08-17 at offset 12.1 GiB
+Aug 17 03:41:55 backup-01 nightly-backup[3562]: transfer complete, 41 GiB sent in 2513s
+Aug 17 03:41:56 backup-01 nightly-backup[3562]: verify: 128204 files, 0 checksum mismatches

@@ -1,0 +1,15 @@
+Aug 18 08:00:04 kasse-02 kassesystem[2210]: INFO  dagens kasseopgørelse startet, bilagsnummer 20260818-02
+Aug 18 08:00:05 kasse-02 kassesystem[2210]: INFO  forbindelse til betalingsterminal DK-4471 oprettet
+Aug 18 08:14:52 kasse-02 kassesystem[2210]: INFO  salg 8812 afsluttet, 249,50 kr., kort
+Aug 18 09:02:31 kasse-02 kassesystem[2210]: WARN  bonrulle er næsten tom, 4 procent tilbage
+Aug 18 09:41:18 kasse-02 kassesystem[2210]: ERROR kunne ikke oprette forbindelse til betalingsterminal DK-4471: svar udeblev efter 20 sekunder
+Aug 18 09:41:18 kasse-02 kassesystem[2210]: INFO  salg 8840 sat i kø til senere afregning
+Aug 18 09:41:40 kasse-02 nssmwatch[688]: terminal DK-4471 svarer ikke på ping, forsøger genstart af drivertjeneste
+Aug 18 09:41:41 kasse-02 systemd[1]: Stopping Betalingsterminal driver...
+Aug 18 09:41:41 kasse-02 systemd[1]: terminaldrv.service: Deactivated successfully.
+Aug 18 09:41:42 kasse-02 systemd[1]: Started Betalingsterminal driver.
+Aug 18 09:41:55 kasse-02 kassesystem[2210]: INFO  forbindelse til betalingsterminal DK-4471 oprettet
+Aug 18 09:42:02 kasse-02 kassesystem[2210]: INFO  salg 8840 afregnet fra kø, 1.099,00 kr., kort
+Aug 18 12:18:07 kasse-02 kassesystem[2210]: ERROR bonprinter svarer med status 0x21, papir mangler
+Aug 18 12:22:44 kasse-02 kassesystem[2210]: INFO  bonrulle skiftet af bruger 14
+Aug 18 17:59:58 kasse-02 kassesystem[2210]: INFO  dagens kasseopgørelse afsluttet, 214 salg, 84.220,50 kr.

@@ -1,0 +1,11 @@
+Aug 18 21:00:03 relay-02 systemd[1]: Started Message relay.
+Aug 18 21:00:04 relay-02 relayd[1188]: listening on 0.0.0.0:9110, 4 workers
+Aug 18 21:00:04 relay-02 relayd[1188]: peer feed-a connected
+Aug 18 21:00:05 relay-02 relayd[1188]: peer feed-b connected
+Aug 18 21:02:41 relay-02 relayd[1188]: error: batch 44810 from feed-a rejected, checksum mismatch
+Aug 18 21:02:41 relay-02 relayd[1188]: peer feed-a asked for resend of batch 44810
+Aug 18 21:02:44 relay-02 relayd[1188]: batch 44810 accepted on resend
+Aug 18 21:04:12 relay-02 relayd[1188]: warn: worker 3 queue depth 4096, throttling feed-b
+Aug 18 21:04:19 relay-02 relayd[1188]: error: batch 44902 from feed-b rejected, checksum mismatch
+Aug 18 21:04:19 relay-02 relayd[1188]: peer feed-b asked for resend of batch 44902
+[read_syslog] output truncated at 4096 bytes; 812 further lines in this window were not returned

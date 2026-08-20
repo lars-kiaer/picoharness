@@ -1,0 +1,10 @@
+2026-08-18T02:00:03Z sens-04 modbusd: poll cycle 118 complete, 24 registers read
+2026-08-18T02:00:33Z sens-04 modbusd: poll cycle 119 complete, 24 registers read
+2026-08-18T02:01:03Z sens-04 modbusd: unit 7 did not answer within 500 ms, 3 tries used, unit marked down
+2026-08-18T02:01:03Z sens-04 modbusd: poll cycle 120 complete, 18 registers read
+2026-08-18T02:01:33Z sens-04 modbusd: poll cycle 121 complete, 18 registers read
+2026-08-18T02:02:03Z sens-04 modbusd: next probe for unit 7 in 300 s
+2026-08-18T02:07:03Z sens-04 modbusd: unit 7 answered, bringing unit up
+2026-08-18T02:07:33Z sens-04 modbusd: poll cycle 132 complete, 24 registers read
+2026-08-18T02:14:03Z sens-04 modbusd: write to register 40012 on unit 3 was refused with exception code 2
+2026-08-18T02:14:33Z sens-04 modbusd: poll cycle 146 complete, 24 registers read

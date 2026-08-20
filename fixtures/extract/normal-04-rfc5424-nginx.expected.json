@@ -1,0 +1,9 @@
+{
+  "host": "gw-01",
+  "error_count": 2,
+  "first_error": "connect() failed (111: Connection refused) while connecting to upstream, client: 10.0.2.31, upstream: \"http://10.0.5.9:8080/api/v1/orders\"",
+  "first_error_at": "2026-08-14T02:11:03.145Z",
+  "service": "nginx",
+  "max_severity": "error",
+  "service_restarted": false
+}

@@ -1,0 +1,9 @@
+{
+  "host": "sens-04",
+  "error_count": 2,
+  "first_error": "unit 7 did not answer within 500 ms, 3 tries used, unit marked down",
+  "first_error_at": "2026-08-18T02:01:03Z",
+  "service": "modbusd",
+  "max_severity": null,
+  "service_restarted": false
+}

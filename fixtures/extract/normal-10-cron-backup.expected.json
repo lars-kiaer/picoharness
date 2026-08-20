@@ -1,0 +1,9 @@
+{
+  "host": "backup-01",
+  "error_count": 2,
+  "first_error": "rsync error: unexplained error (code 255) at io.c(231) [sender=3.2.7]",
+  "first_error_at": "Aug 17 01:14:38",
+  "service": "nightly-backup",
+  "max_severity": "error",
+  "service_restarted": false
+}

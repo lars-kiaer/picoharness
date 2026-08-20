@@ -1,0 +1,9 @@
+{
+  "host": "jobs-02",
+  "error_count": 1,
+  "first_error": "ERROR [pool-2-thread-2] c.e.b.NightlyRunner - task reconcile-ledger aborted after 3 attempts",
+  "first_error_at": "Aug 15 00:02:47",
+  "service": "batch",
+  "max_severity": "error",
+  "service_restarted": false
+}

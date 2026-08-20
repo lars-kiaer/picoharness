@@ -1,0 +1,9 @@
+{
+  "host": "web-03",
+  "error_count": 2,
+  "first_error": "error: maximum authentication attempts exceeded for root from 203.0.113.44 port 40122 ssh2 [preauth]",
+  "first_error_at": "2026-08-12T04:33:10+0000",
+  "service": "sshd",
+  "max_severity": "error",
+  "service_restarted": true
+}

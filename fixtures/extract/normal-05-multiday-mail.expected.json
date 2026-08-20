@@ -1,0 +1,9 @@
+{
+  "host": "mail-01",
+  "error_count": 3,
+  "first_error": "91B4C40B02: to=<orders@partner.example.com>, relay=none, delay=30, status=deferred (Host or domain name not found. Name service error for name=partner.example.com type=AAAA: Host not found)",
+  "first_error_at": "Aug 10 03:12:19",
+  "service": "postfix/smtp",
+  "max_severity": "error",
+  "service_restarted": true
+}

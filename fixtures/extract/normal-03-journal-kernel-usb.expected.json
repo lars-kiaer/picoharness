@@ -1,0 +1,9 @@
+{
+  "host": "edge-pi",
+  "error_count": 3,
+  "first_error": "ftdi_sio ttyUSB0: error from flowcontrol urb",
+  "first_error_at": "Aug 12 03:16:41",
+  "service": "kernel",
+  "max_severity": "error",
+  "service_restarted": false
+}

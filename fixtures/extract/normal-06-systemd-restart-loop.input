@@ -1,0 +1,20 @@
+Aug 13 21:04:02 app-11 systemd[1]: Started Order ingest worker.
+Aug 13 21:04:03 app-11 ingest[4410]: info  starting ingest worker build 2026.08.2
+Aug 13 21:04:03 app-11 ingest[4410]: info  connecting to amqp://broker-1:5672/ingest
+Aug 13 21:04:33 app-11 ingest[4410]: fatal dial amqp://broker-1:5672/ingest: i/o timeout after 30s
+Aug 13 21:04:33 app-11 systemd[1]: ingest.service: Main process exited, code=exited, status=1/FAILURE
+Aug 13 21:04:33 app-11 systemd[1]: ingest.service: Failed with result 'exit-code'.
+Aug 13 21:04:38 app-11 systemd[1]: ingest.service: Scheduled restart job, restart counter is at 1.
+Aug 13 21:04:38 app-11 systemd[1]: Stopped Order ingest worker.
+Aug 13 21:04:38 app-11 systemd[1]: Started Order ingest worker.
+Aug 13 21:04:39 app-11 ingest[4462]: info  starting ingest worker build 2026.08.2
+Aug 13 21:05:09 app-11 ingest[4462]: fatal dial amqp://broker-1:5672/ingest: i/o timeout after 30s
+Aug 13 21:05:09 app-11 systemd[1]: ingest.service: Main process exited, code=exited, status=1/FAILURE
+Aug 13 21:05:09 app-11 systemd[1]: ingest.service: Failed with result 'exit-code'.
+Aug 13 21:05:14 app-11 systemd[1]: ingest.service: Scheduled restart job, restart counter is at 2.
+Aug 13 21:05:14 app-11 systemd[1]: Stopped Order ingest worker.
+Aug 13 21:05:14 app-11 systemd[1]: Started Order ingest worker.
+Aug 13 21:05:15 app-11 ingest[4519]: info  starting ingest worker build 2026.08.2
+Aug 13 21:05:16 app-11 ingest[4519]: info  connected to amqp://broker-1:5672/ingest
+Aug 13 21:05:16 app-11 ingest[4519]: info  consuming queue orders.inbound prefetch=32
+Aug 13 21:09:40 app-11 ingest[4519]: warn  redelivery of message 8812f0 after nack

@@ -1,0 +1,12 @@
+Aug 11 08:57:41 host-a CRON[2201]: (root) CMD (/usr/local/bin/collect-metrics.sh)
+Aug 11 08:58:02 host-a smartd[901]: Device: /dev/sda [SAT], SMART Usage Attribute: 194 Temperature_Celsius changed from 38 to 41
+Aug 11 08:59:17 host-a dbus-daemon[712]: [system] Successfully activated service 'org.freedesktop.hostname1'
+Aug 11 09:00:01 host-a CRON[2214]: (root) CMD (/usr/local/bin/rotate-cache.sh)
+Aug 11 09:00:03 host-a kernel: EXT4-fs error (device sda1): ext4_find_entry:1455: inode #262145: comm rotate-cache.sh: reading directory lblock 0
+Aug 11 09:00:03 host-a rotate-cache[2216]: cannot list /var/cache/app: Input/output error
+Aug 11 09:01:11 host-a kernel: blk_update_request: I/O error, dev sda, sector 90128384 op 0x1:(WRITE) flags 0x800 phys_seg 4 prio class 0
+Aug 11 09:01:11 host-a app[1503]: err: write of 4096 bytes to /var/lib/app/queue.db failed: Input/output error
+Aug 11 09:01:12 host-a app[1503]: warning: queue depth 812, backpressure engaged
+Aug 11 09:02:30 host-a smartd[901]: Device: /dev/sda [SAT], SMART Prefailure Attribute: 5 Reallocated_Sector_Ct changed from 100 to 99
+Aug 11 09:03:00 host-a CRON[2231]: (root) CMD (/usr/local/bin/collect-metrics.sh)
+Aug 11 09:04:18 host-a app[1503]: queue depth 214, backpressure released

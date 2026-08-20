@@ -1,0 +1,9 @@
+{
+  "host": "ci-runner-3",
+  "error_count": 5,
+  "first_error": "error processing package openssl (--configure): installed openssl package post-installation script subprocess returned error exit status 1",
+  "first_error_at": "Aug 18 06:13:44",
+  "service": "dpkg",
+  "max_severity": "error",
+  "service_restarted": true
+}

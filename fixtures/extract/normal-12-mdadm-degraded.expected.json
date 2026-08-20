@@ -1,0 +1,9 @@
+{
+  "host": "store-04",
+  "error_count": 7,
+  "first_error": "ata4.00: failed command: READ FPDMA QUEUED",
+  "first_error_at": "Aug 18 01:14:41",
+  "service": "kernel",
+  "max_severity": "error",
+  "service_restarted": false
+}

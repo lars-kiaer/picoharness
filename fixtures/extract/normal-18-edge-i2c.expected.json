@@ -1,0 +1,9 @@
+{
+  "host": "pi-lite-01",
+  "error_count": 2,
+  "first_error": "err read sht31@0x44: Remote I/O error",
+  "first_error_at": "Aug 18 04:15:04",
+  "service": "sensord",
+  "max_severity": "error",
+  "service_restarted": true
+}

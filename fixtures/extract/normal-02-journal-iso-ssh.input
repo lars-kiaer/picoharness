@@ -1,0 +1,15 @@
+2026-08-12T04:11:02+0000 web-03 systemd[1]: Stopping OpenBSD Secure Shell server...
+2026-08-12T04:11:02+0000 web-03 sshd[884]: Received signal 15; terminating.
+2026-08-12T04:11:03+0000 web-03 systemd[1]: ssh.service: Deactivated successfully.
+2026-08-12T04:11:03+0000 web-03 systemd[1]: Stopped OpenBSD Secure Shell server.
+2026-08-12T04:11:03+0000 web-03 systemd[1]: Starting OpenBSD Secure Shell server...
+2026-08-12T04:11:04+0000 web-03 sshd[2991]: Server listening on 0.0.0.0 port 22.
+2026-08-12T04:11:04+0000 web-03 systemd[1]: Started OpenBSD Secure Shell server.
+2026-08-12T04:19:44+0000 web-03 sshd[3012]: Accepted publickey for deploy from 10.0.4.19 port 51122 ssh2: ED25519 SHA256:0Yq1
+2026-08-12T04:33:10+0000 web-03 sshd[3140]: error: maximum authentication attempts exceeded for root from 203.0.113.44 port 40122 ssh2 [preauth]
+2026-08-12T04:33:10+0000 web-03 sshd[3140]: Disconnecting authenticating user root 203.0.113.44 port 40122 [preauth]
+2026-08-12T04:33:12+0000 web-03 sshd[3142]: error: maximum authentication attempts exceeded for admin from 203.0.113.44 port 40130 ssh2 [preauth]
+2026-08-12T04:33:19+0000 web-03 sshd[3151]: Connection closed by authenticating user root 203.0.113.44 port 40166 [preauth]
+2026-08-12T04:35:00+0000 web-03 CRON[3180]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+2026-08-12T04:35:00+0000 web-03 CRON[3181]: (root) CMD (/usr/bin/certbot renew -q)
+2026-08-12T04:35:02+0000 web-03 CRON[3180]: pam_unix(cron:session): session closed for user root

@@ -1,0 +1,9 @@
+{
+  "host": "node-7",
+  "error_count": 3,
+  "first_error": "level=error msg=\"reload aborted: /etc/checkout/rules.yaml: yaml: line 41: mapping values are not allowed in this context\"",
+  "first_error_at": "Aug 18 13:06:02",
+  "service": "checkout",
+  "max_severity": "error",
+  "service_restarted": true
+}

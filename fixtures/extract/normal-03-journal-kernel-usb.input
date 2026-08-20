@@ -1,0 +1,16 @@
+Aug 12 03:14:09 edge-pi kernel: usb 1-1.3: new high-speed USB device number 7 using dwc_otg
+Aug 12 03:14:09 edge-pi kernel: usb 1-1.3: New USB device found, idVendor=0403, idProduct=6001, bcdDevice= 6.00
+Aug 12 03:14:09 edge-pi kernel: ftdi_sio 1-1.3:1.0: FTDI USB Serial Device converter detected
+Aug 12 03:14:09 edge-pi kernel: usb 1-1.3: FTDI USB Serial Device converter now attached to ttyUSB0
+Aug 12 03:14:22 edge-pi kernel: usb 1-1.3: usbfs: interface 0 claimed by ftdi_sio while 'modem-probe' sets config #1
+Aug 12 03:16:41 edge-pi kernel: ftdi_sio ttyUSB0: error from flowcontrol urb
+Aug 12 03:16:41 edge-pi kernel: usb 1-1.3: USB disconnect, device number 7
+Aug 12 03:16:41 edge-pi kernel: ftdi_sio ttyUSB0: ftdi_sio converter now disconnected from ttyUSB0
+Aug 12 03:16:52 edge-pi kernel: usb 1-1.3: new high-speed USB device number 8 using dwc_otg
+Aug 12 03:16:52 edge-pi kernel: usb 1-1.3: device descriptor read/64, error -71
+Aug 12 03:16:53 edge-pi kernel: usb 1-1.3: device descriptor read/64, error -71
+Aug 12 03:16:53 edge-pi kernel: usb 1-1-port3: attempt power cycle
+Aug 12 03:16:55 edge-pi kernel: usb 1-1.3: new high-speed USB device number 9 using dwc_otg
+Aug 12 03:16:55 edge-pi kernel: ftdi_sio 1-1.3:1.0: FTDI USB Serial Device converter detected
+Aug 12 03:16:55 edge-pi kernel: usb 1-1.3: FTDI USB Serial Device converter now attached to ttyUSB0
+Aug 12 03:16:56 edge-pi modem-probe[771]: reopened /dev/ttyUSB0 after 2 retries

@@ -1,0 +1,9 @@
+{
+  "host": "relay-02",
+  "error_count": null,
+  "first_error": "error: batch 44810 from feed-a rejected, checksum mismatch",
+  "first_error_at": "Aug 18 21:02:41",
+  "service": "relayd",
+  "max_severity": "error",
+  "service_restarted": true
+}

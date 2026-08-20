@@ -1,0 +1,9 @@
+{
+  "host": "host-a",
+  "error_count": 4,
+  "first_error": "EXT4-fs error (device sda1): ext4_find_entry:1455: inode #262145: comm rotate-cache.sh: reading directory lblock 0",
+  "first_error_at": "Aug 11 09:00:03",
+  "service": "kernel",
+  "max_severity": "error",
+  "service_restarted": false
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "picoharness/schemas/log_summary@2.json",
+  "title": "log_summary@2",
+  "description": "One structured summary of one window of system log text. Every field is nullable. A field is null when the input does not contain the value. A model must not supply a value that the input does not contain.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "host",
+    "error_count",
+    "first_error",
+    "first_error_at",
+    "service",
+    "max_severity",
+    "service_restarted"
+  ],
+  "properties": {
+    "host": {
+      "description": "The name of the machine that wrote the log, copied exactly as the input writes it. Null if the input carries no host name.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "error_count": {
+      "description": "The number of lines in the window that report a failure. Null if the input states that it is incomplete, because the number is then not derivable.",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "first_error": {
+      "description": "The message text of the first line that reports a failure, copied exactly. Null if there is no such line, or if the message text is removed.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "first_error_at": {
+      "description": "The time stamp of that same line, copied exactly as the input writes it. Null if there is no such line, or if the line carries no time stamp.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "service": {
+      "description": "The program or unit that wrote the first error line, without the process identifier. Null if there is no such line, or if the line names no program.",
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "max_severity": {
+      "description": "The highest severity that the input states, mapped to one of five levels. Null if the input states no severity.",
+      "type": ["string", "null"],
+      "enum": ["critical", "error", "warning", "info", "debug", null]
+    },
+    "service_restarted": {
+      "description": "True if the window records a service start or restart. False if the window records service activity but no start and no restart. Null if the window records no service lifecycle at all.",
+      "type": ["boolean", "null"]
+    }
+  }
+}

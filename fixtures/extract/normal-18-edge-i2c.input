@@ -1,0 +1,15 @@
+Aug 18 04:00:02 pi-lite-01 systemd[1]: Started Sensor gateway.
+Aug 18 04:00:03 pi-lite-01 sensord[512]: opened /dev/i2c-1, 3 devices declared
+Aug 18 04:00:03 pi-lite-01 sensord[512]: bme280@0x76 ok, sht31@0x44 ok, ads1115@0x48 ok
+Aug 18 04:05:03 pi-lite-01 sensord[512]: sample t=21.4C rh=48.1% v=3.284
+Aug 18 04:10:03 pi-lite-01 sensord[512]: sample t=21.4C rh=48.0% v=3.283
+Aug 18 04:15:04 pi-lite-01 kernel: i2c i2c-1: sendbytes: NAK bailout.
+Aug 18 04:15:04 pi-lite-01 sensord[512]: err read sht31@0x44: Remote I/O error
+Aug 18 04:15:04 pi-lite-01 sensord[512]: sample t=21.4C rh=- v=3.283
+Aug 18 04:20:04 pi-lite-01 kernel: i2c i2c-1: sendbytes: NAK bailout.
+Aug 18 04:20:04 pi-lite-01 sensord[512]: err read sht31@0x44: Remote I/O error
+Aug 18 04:20:05 pi-lite-01 sensord[512]: bus reset requested, toggling SCL 9 times
+Aug 18 04:20:06 pi-lite-01 sensord[512]: sht31@0x44 ok after bus reset
+Aug 18 04:25:04 pi-lite-01 sensord[512]: sample t=21.5C rh=48.2% v=3.284
+Aug 18 05:00:01 pi-lite-01 cron[498]: (root) CMD (/usr/local/bin/upload-samples.sh)
+Aug 18 05:00:09 pi-lite-01 upload-samples[9014]: 288 samples uploaded, 0 queued

@@ -1,0 +1,9 @@
+{
+  "host": null,
+  "error_count": 5,
+  "first_error": "mmc0: error -110 whilst initialising SD card",
+  "first_error_at": "[   12.443112]",
+  "service": null,
+  "max_severity": "error",
+  "service_restarted": null
+}

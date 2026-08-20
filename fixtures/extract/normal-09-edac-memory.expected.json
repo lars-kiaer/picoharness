@@ -1,0 +1,9 @@
+{
+  "host": "mem-node-1",
+  "error_count": 7,
+  "first_error": "EDAC MC0: 1 CE memory read error on CPU_SrcID#0_MC#0_Chan#1_DIMM#0 (channel:1 slot:0 page:0x8f2a11 offset:0x180 grain:32 syndrome:0x0)",
+  "first_error_at": "Aug 16 02:44:51",
+  "service": "kernel",
+  "max_severity": "error",
+  "service_restarted": true
+}

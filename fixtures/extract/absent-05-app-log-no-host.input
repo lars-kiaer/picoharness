@@ -1,0 +1,10 @@
+2026-08-18 09:00:00,114 INFO  checkout-api: starting version 4.2.1, profile production
+2026-08-18 09:00:00,882 INFO  checkout-api: connected to postgres://db-02/checkout, pool size 8
+2026-08-18 09:00:01,004 INFO  checkout-api: listening on 0.0.0.0:8080
+2026-08-18 09:14:02,118 INFO  checkout-api: basket 88120 priced, 4 lines, 812.50 DKK
+2026-08-18 09:41:33,551 WARN  checkout-api: payment gateway answered in 4118 ms, above the 2000 ms budget
+2026-08-18 09:44:12,009 ERROR checkout-api: connection to payments-gw refused, order 88144 left unpaid
+2026-08-18 09:44:12,010 INFO  checkout-api: order 88144 queued for retry in 60 s
+2026-08-18 09:45:12,441 ERROR checkout-api: connection to payments-gw refused, order 88144 left unpaid
+2026-08-18 09:46:12,880 INFO  checkout-api: order 88144 paid on third attempt
+2026-08-18 10:02:44,127 INFO  checkout-api: basket 88190 priced, 1 line, 249.00 DKK

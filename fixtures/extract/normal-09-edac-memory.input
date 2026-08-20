@@ -1,0 +1,14 @@
+Aug 16 02:41:03 mem-node-1 systemd[1]: Started Analytics rollup service.
+Aug 16 02:41:04 mem-node-1 rollup[8812]: loading window 2026-08-15 (18.4M rows)
+Aug 16 02:44:51 mem-node-1 kernel: EDAC MC0: 1 CE memory read error on CPU_SrcID#0_MC#0_Chan#1_DIMM#0 (channel:1 slot:0 page:0x8f2a11 offset:0x180 grain:32 syndrome:0x0)
+Aug 16 02:44:51 mem-node-1 kernel: mce: [Hardware Error]: Machine check events logged
+Aug 16 02:45:02 mem-node-1 mcelog[702]: Corrected memory errors on DIMM at channel 1 slot 0, count 14 in 60s
+Aug 16 02:45:02 mem-node-1 mcelog[702]: Location SOCKET:0 CHANNEL:1 DIMM:0
+Aug 16 02:52:44 mem-node-1 kernel: EDAC MC0: 1 UE memory read error on CPU_SrcID#0_MC#0_Chan#1_DIMM#0 (channel:1 slot:0 page:0x8f2a11 offset:0x180 grain:32)
+Aug 16 02:52:44 mem-node-1 kernel: EDAC sbridge MC0: HANDLING MCE MEMORY ERROR
+Aug 16 02:52:45 mem-node-1 rollup[8812]: error: aborting window 2026-08-15, page checksum mismatch after MCE
+Aug 16 02:52:46 mem-node-1 systemd[1]: rollup.service: Failed with result 'exit-code'.
+Aug 16 02:52:51 mem-node-1 systemd[1]: rollup.service: Scheduled restart job, restart counter is at 1.
+Aug 16 02:52:51 mem-node-1 systemd[1]: Started Analytics rollup service.
+Aug 16 02:52:52 mem-node-1 rollup[8977]: loading window 2026-08-15 (18.4M rows)
+Aug 16 03:09:31 mem-node-1 rollup[8977]: window 2026-08-15 complete in 999s

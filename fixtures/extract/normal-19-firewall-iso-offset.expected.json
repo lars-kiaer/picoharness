@@ -1,0 +1,9 @@
+{
+  "host": "fw-01",
+  "error_count": 3,
+  "first_error": "peer-02/198.51.100.31:1194 TLS Error: TLS key negotiation failed to occur within 60 seconds",
+  "first_error_at": "2026-08-18T05:22:41.220118+02:00",
+  "service": "openvpn",
+  "max_severity": "error",
+  "service_restarted": false
+}

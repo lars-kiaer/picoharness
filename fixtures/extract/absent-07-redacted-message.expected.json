@@ -1,0 +1,9 @@
+{
+  "host": "pay-03",
+  "error_count": 2,
+  "first_error": null,
+  "first_error_at": "Aug 18 02:14:09",
+  "service": "pay-gw",
+  "max_severity": "error",
+  "service_restarted": false
+}

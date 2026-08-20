@@ -1,0 +1,40 @@
+Aug  9 02:00:01 mail-01 CRON[9012]: (root) CMD (test -x /usr/sbin/anacron || /etc/cron.daily/logrotate)
+Aug  9 02:00:04 mail-01 rsyslogd: [origin software="rsyslogd" swVersion="8.2312.0"] rsyslogd was HUPed
+Aug  9 02:11:37 mail-01 postfix/smtpd[9114]: connect from mx-relay.example.net[198.51.100.7]
+Aug  9 02:11:38 mail-01 postfix/smtpd[9114]: 3A17C40A21: client=mx-relay.example.net[198.51.100.7]
+Aug  9 02:11:38 mail-01 postfix/qmgr[812]: 3A17C40A21: from=<billing@example.net>, size=4412, nrcpt=1 (queue active)
+Aug  9 02:11:39 mail-01 postfix/local[9120]: 3A17C40A21: to=<anna@example.org>, relay=local, delay=1.2, status=sent (delivered to maildir)
+Aug  9 04:30:02 mail-01 systemd[1]: Starting Daily apt download activities...
+Aug  9 04:30:44 mail-01 systemd[1]: apt-daily.service: Deactivated successfully.
+Aug  9 04:30:44 mail-01 systemd[1]: Finished Daily apt download activities.
+Aug  9 06:25:12 mail-01 avahi-daemon[701]: Registering new address record for fe80::1c2a on eth0.*.
+Aug  9 09:41:02 mail-01 postfix/smtpd[9880]: warning: hostname 203.0.113.61 does not resolve to address 203.0.113.61
+Aug  9 09:41:02 mail-01 postfix/smtpd[9880]: connect from unknown[203.0.113.61]
+Aug  9 09:41:03 mail-01 postfix/smtpd[9880]: NOQUEUE: reject: RCPT from unknown[203.0.113.61]: 554 5.7.1 Service unavailable; Client host [203.0.113.61] blocked
+Aug  9 09:41:03 mail-01 postfix/smtpd[9880]: disconnect from unknown[203.0.113.61] ehlo=1 rcpt=0/1 quit=1 commands=3/4
+Aug  9 14:02:55 mail-01 cupsd[644]: REQUEST localhost - - "POST / HTTP/1.1" 200 362 Renew-Subscription successful-ok
+Aug  9 22:17:04 mail-01 snapd[688]: storehelpers.go:838: cannot refresh: snap has no updates available: "core22", "lxd"
+Aug 10 02:00:01 mail-01 CRON[10233]: (root) CMD (test -x /usr/sbin/anacron || /etc/cron.daily/logrotate)
+Aug 10 03:12:19 mail-01 postfix/smtp[10401]: 91B4C40B02: to=<orders@partner.example.com>, relay=none, delay=30, status=deferred (Host or domain name not found. Name service error for name=partner.example.com type=AAAA: Host not found)
+Aug 10 03:12:19 mail-01 named[655]: error (network unreachable) resolving 'partner.example.com/AAAA/IN': 2001:503:ba3e::2:30#53
+Aug 10 03:12:49 mail-01 named[655]: error (network unreachable) resolving 'partner.example.com/A/IN': 2001:500:200::b#53
+Aug 10 03:13:20 mail-01 systemd[1]: Stopping BIND Domain Name Server...
+Aug 10 03:13:20 mail-01 systemd[1]: named.service: Deactivated successfully.
+Aug 10 03:13:20 mail-01 systemd[1]: Stopped BIND Domain Name Server.
+Aug 10 03:13:21 mail-01 systemd[1]: Starting BIND Domain Name Server...
+Aug 10 03:13:21 mail-01 named[11002]: running on Linux x86_64 6.8.0-40-generic
+Aug 10 03:13:22 mail-01 systemd[1]: Started BIND Domain Name Server.
+Aug 10 03:13:52 mail-01 postfix/smtp[10455]: 91B4C40B02: to=<orders@partner.example.com>, relay=mx1.partner.example.com[192.0.2.44]:25, delay=124, status=sent (250 2.0.0 Ok)
+Aug 10 08:04:11 mail-01 postfix/smtpd[11330]: connect from mx-relay.example.net[198.51.100.7]
+Aug 10 08:04:12 mail-01 postfix/local[11336]: C88F440B31: to=<lars@example.org>, relay=local, delay=0.9, status=sent (delivered to maildir)
+Aug 10 12:00:22 mail-01 cupsd[644]: REQUEST localhost - - "POST /admin/ HTTP/1.1" 200 195 Pause-Printer successful-ok
+Aug 10 19:55:41 mail-01 avahi-daemon[701]: Withdrawing address record for fe80::1c2a on eth0.
+Aug 11 02:00:01 mail-01 CRON[12008]: (root) CMD (test -x /usr/sbin/anacron || /etc/cron.daily/logrotate)
+Aug 11 02:04:33 mail-01 postfix/qmgr[812]: 44C1E40C07: from=<noreply@example.org>, size=1188, nrcpt=3 (queue active)
+Aug 11 02:04:34 mail-01 postfix/local[12044]: 44C1E40C07: to=<ops@example.org>, relay=local, delay=0.7, status=sent (delivered to maildir)
+Aug 11 05:18:02 mail-01 postfix/smtpd[12190]: warning: unknown[192.0.2.201]: SASL LOGIN authentication aborted: no mechanism available
+Aug 11 05:18:02 mail-01 postfix/smtpd[12190]: disconnect from unknown[192.0.2.201] ehlo=1 auth=0/1 quit=1 commands=2/3
+Aug 11 11:31:57 mail-01 snapd[688]: autorefresh.go:541: auto-refresh: all snaps are up-to-date
+Aug 11 16:47:20 mail-01 postfix/qmgr[812]: 7D2AB40C99: from=<billing@example.net>, size=9021, nrcpt=1 (queue active)
+Aug 11 16:47:21 mail-01 postfix/local[12881]: 7D2AB40C99: to=<anna@example.org>, relay=local, delay=1.0, status=sent (delivered to maildir)
+Aug 11 23:59:12 mail-01 rsyslogd: [origin software="rsyslogd" swVersion="8.2312.0"] rsyslogd was HUPed

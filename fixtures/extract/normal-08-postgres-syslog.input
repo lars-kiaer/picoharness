@@ -1,0 +1,11 @@
+Aug 15 04:20:00 db-02 postgres[2210]: [8-1] user=,db= LOG:  checkpoint starting: time
+Aug 15 04:21:30 db-02 postgres[2210]: [9-1] user=,db= LOG:  checkpoint complete: wrote 2214 buffers (13.5%); 0 WAL file(s) added
+Aug 15 04:22:11 db-02 postgres[2214]: [12-1] user=app,db=app ERROR:  deadlock detected
+Aug 15 04:22:11 db-02 postgres[2214]: [12-2] user=app,db=app DETAIL:  Process 2214 waits for ShareLock on transaction 918822; blocked by process 2209.
+Aug 15 04:22:11 db-02 postgres[2214]: [12-3] user=app,db=app HINT:  See server log for query details.
+Aug 15 04:22:11 db-02 postgres[2214]: [12-4] user=app,db=app STATEMENT:  UPDATE ledger SET balance = balance - 12 WHERE account_id = 4471
+Aug 15 04:24:02 db-02 postgres[2209]: [7-1] user=,db= LOG:  automatic vacuum of table "app.public.ledger": index scans: 1
+Aug 15 04:31:19 db-02 postgres[2301]: [3-1] user=reporting,db=app FATAL:  password authentication failed for user "reporting"
+Aug 15 04:31:19 db-02 postgres[2301]: [3-2] user=reporting,db=app DETAIL:  Connection matched pg_hba.conf line 96: "host all all 10.0.0.0/8 scram-sha-256"
+Aug 15 04:33:41 db-02 postgres[2210]: [10-1] user=,db= LOG:  checkpoint starting: time
+Aug 15 04:35:02 db-02 postgres[2210]: [11-1] user=,db= LOG:  checkpoint complete: wrote 1902 buffers (11.6%); 0 WAL file(s) added

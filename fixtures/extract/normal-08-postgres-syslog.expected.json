@@ -1,0 +1,9 @@
+{
+  "host": "db-02",
+  "error_count": 2,
+  "first_error": "[12-1] user=app,db=app ERROR:  deadlock detected",
+  "first_error_at": "Aug 15 04:22:11",
+  "service": "postgres",
+  "max_severity": "critical",
+  "service_restarted": false
+}
