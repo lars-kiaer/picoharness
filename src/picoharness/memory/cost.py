@@ -93,7 +93,7 @@ class Estimate:
         """The number to charge against the budget. None means: use the manifest."""
         return self.p90_ms if self.confidence != "manifest" else None
 
-    def max_observed(self, model: "CostModel") -> float | None:
+    def max_observed(self, model: CostModel) -> float | None:
         """The slowest call seen. At small sample sizes this equals `p90_ms`."""
         row = model.conn.execute(
             "SELECT MAX(max_ms) AS m FROM v_provider_cost WHERE provider_id = ?"

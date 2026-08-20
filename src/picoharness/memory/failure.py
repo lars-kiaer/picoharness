@@ -485,10 +485,10 @@ def _print_rows(rows: Sequence[sqlite3.Row]) -> None:
         return
     cols = rows[0].keys()
     widths = [max(len(c), *(len(str(r[c])) for r in rows)) for c in cols]
-    print("  " + "  ".join(c.ljust(w) for c, w in zip(cols, widths)))
+    print("  " + "  ".join(c.ljust(w) for c, w in zip(cols, widths, strict=True)))
     print("  " + "  ".join("-" * w for w in widths))
     for r in rows:
-        print("  " + "  ".join(str(r[c]).ljust(w) for c, w in zip(cols, widths)))
+        print("  " + "  ".join(str(r[c]).ljust(w) for c, w in zip(cols, widths, strict=True)))
 
 
 def main(argv: Sequence[str] | None = None) -> int:

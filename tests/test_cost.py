@@ -62,7 +62,7 @@ def cm(tmp_path: Path):
 
 
 def test_durations_reach_both_tables(cm) -> None:
-    model, ix = cm
+    _model, ix = cm
     facts = ix.conn.execute(
         "SELECT COUNT(*) FROM fact WHERE duration_ms IS NOT NULL").fetchone()[0]
     fails = ix.conn.execute(
@@ -146,7 +146,7 @@ def test_pooled_estimate_without_a_schema(cm) -> None:
 def test_calibration_report_is_slowest_first(cm) -> None:
     model, _ = cm
     rows = model.calibration_report()
-    assert [r["provider_id"] for r in rows][0] in {"small", "large"}
+    assert rows[0]["provider_id"] in {"small", "large"}
     assert rows[0]["p90_ms"] >= rows[-1]["p90_ms"]
 
 

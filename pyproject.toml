@@ -19,6 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Database",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -27,7 +28,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [project.urls]
 Homepage = "https://github.com/lars-kiaer/picoharness"
@@ -51,3 +52,13 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["src", "tests", "examples"]
+
+[tool.ruff.lint]
+# E/F  pycodestyle and pyflakes   I  import order
+# UP   pyupgrade                  B  bugbear
+# RUF  ruff-specific
+select = ["E", "F", "I", "UP", "B", "RUF"]
+# `__all__` is grouped by meaning, not alphabetically. The grouping is the
+# documentation: the index and its value objects, then the failure store.
+ignore = ["RUF022"]

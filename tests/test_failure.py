@@ -12,7 +12,6 @@ from pathlib import Path
 import pytest
 
 from picoharness.memory.episodic import EpisodicIndex
-from picoharness.memory.samples import BUILD_OK as S1, BUILD_OK_2 as S2, DEAD_END as S3, TAINTED as S4
 from picoharness.memory.failure import (
     REPORT_SQL,
     Avoidance,
@@ -21,6 +20,10 @@ from picoharness.memory.failure import (
     normalise_detail,
     signature_for,
 )
+from picoharness.memory.samples import BUILD_OK as S1
+from picoharness.memory.samples import BUILD_OK_2 as S2
+from picoharness.memory.samples import DEAD_END as S3
+from picoharness.memory.samples import TAINTED as S4
 
 # --------------------------------------------------------------------------
 # fixtures
@@ -191,7 +194,7 @@ def test_prompt_block_is_empty_when_nothing_is_known(fm) -> None:
 
 def test_unresolved_failure_says_so(fm) -> None:
     mem, _ = fm
-    gap = [a for a in mem.avoidance(capability="read_image@1")][0]
+    gap = mem.avoidance(capability="read_image@1")[0]
     assert gap.remedy is None
     assert "no known remedy" in gap.line()
 
@@ -245,7 +248,7 @@ def test_reports_accept_a_time_window(fm) -> None:
 
 def test_sql_is_readable_without_the_python(fm) -> None:
     """The operator must be able to run this from sqlite3 or R."""
-    mem, ix = fm
+    _mem, ix = fm
     raw = sqlite3.connect(ix.db_path)
     rows = raw.execute("SELECT provider_id, pass_rate FROM v_provider_health "
                        "ORDER BY pass_rate").fetchall()

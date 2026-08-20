@@ -10,14 +10,14 @@ from pathlib import Path
 
 import pytest
 
-from picoharness.memory.samples import DISK_A as SESSION_A, DISK_B as SESSION_B
 from picoharness.memory.episodic import (
     EpisodicIndex,
     RecallPolicy,
     TrustViolation,
     searchable_text,
 )
-
+from picoharness.memory.samples import DISK_A as SESSION_A
+from picoharness.memory.samples import DISK_B as SESSION_B
 
 # --------------------------------------------------------------------------
 # fixtures: two synthetic session ledgers

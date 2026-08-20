@@ -21,9 +21,9 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
@@ -324,8 +324,11 @@ class EpisodicIndex:
             for r in self.conn.execute("SELECT id FROM fact WHERE session_id = ?", (session_id,))
         ]
         for fact_id in ids:
-            self.conn.execute("INSERT INTO fact_fts (fact_fts, rowid, text, subject) "
-                              "SELECT 'delete', id, text, subject FROM fact WHERE id = ?", (fact_id,))
+            self.conn.execute(
+                "INSERT INTO fact_fts (fact_fts, rowid, text, subject) "
+                "SELECT 'delete', id, text, subject FROM fact WHERE id = ?",
+                (fact_id,),
+            )
         erow = self.conn.execute(
             "SELECT rowid, goal FROM episode WHERE session_id = ?", (session_id,)
         ).fetchone()
@@ -358,7 +361,8 @@ class EpisodicIndex:
             text = searchable_text(fact["payload"])
             cur = self.conn.execute(
                 "INSERT INTO fact (session_id, seq, observed_at, schema_id, provider_id,"
-                " trust, subject, payload, text, valid_until, duration_ms) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                " trust, subject, payload, text, valid_until, duration_ms)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     ep.session_id, fact["seq"], fact["observed_at"], fact["schema_id"],
                     fact["provider_id"], fact["trust"], fact["subject"],
@@ -431,7 +435,7 @@ class EpisodicIndex:
             "FROM fact f JOIN episode e ON e.session_id = f.session_id",
         ]
         params: list[Any] = []
-        where = ["f.trust IN (%s)" % ",".join("?" * len(allowed))]
+        where = [f"f.trust IN ({','.join('?' * len(allowed))})"]
         params.extend(sorted(allowed))
 
         if ranked:
@@ -497,7 +501,7 @@ class EpisodicIndex:
         policy = policy or RecallPolicy()
         allowed = CONTROL_SAFE & policy.allow_trust if policy.for_control else policy.allow_trust
         where = ["ff.key = ?", "ff.num IS NOT NULL",
-                 "f.trust IN (%s)" % ",".join("?" * len(allowed))]
+                 f"f.trust IN ({','.join('?' * len(allowed))})"]
         params: list[Any] = [key, *sorted(allowed)]
         if below is not None:
             where.append("ff.num < ?")
@@ -538,7 +542,10 @@ class EpisodicIndex:
             "fields": one("SELECT COUNT(*) FROM fact_field"),
             "untrusted_facts": one("SELECT COUNT(*) FROM fact WHERE trust = 'T1'"),
             "failures": one("SELECT COUNT(*) FROM failure"),
-            "unresolved": one("SELECT COUNT(*) FROM failure WHERE resolution IN ('abandoned','declined')"),
+            "unresolved": one(
+                "SELECT COUNT(*) FROM failure"
+                " WHERE resolution IN ('abandoned','declined')"
+            ),
         }
 
     def _to_recalled(self, row: sqlite3.Row, *, ranked: bool) -> Recalled:
@@ -677,12 +684,12 @@ class _EpisodeBuilder:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _days_ago(days: int) -> str:
-    ts = datetime.now(timezone.utc).timestamp() - days * 86400
-    return datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ts = datetime.now(UTC).timestamp() - days * 86400
+    return datetime.fromtimestamp(ts, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _fts_query(raw: str) -> str:
@@ -691,7 +698,8 @@ def _fts_query(raw: str) -> str:
     A user question is not FTS5 syntax. An unquoted token can be an operator
     and cause a syntax error, or worse, a silent change of meaning.
     """
-    tokens = [t for t in "".join(c if c.isalnum() or c in "_-" else " " for c in raw).split() if len(t) > 1]
+    words = "".join(c if c.isalnum() or c in "_-" else " " for c in raw).split()
+    tokens = [t for t in words if len(t) > 1]
     if not tokens:
         return '""'
     return " OR ".join(f'"{t}"' for t in tokens)

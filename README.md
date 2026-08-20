@@ -5,8 +5,11 @@ The state is a file. The models are pure functions over it. One provider runs
 at a time, and a provider can be a model, a parser, or a shell script.
 
 The design is in [`docs/serial-micro-agent-harness.md`](docs/serial-micro-agent-harness.md).
+The runtime and model choices are in
+[`docs/model-evaluation-and-runtime.md`](docs/model-evaluation-and-runtime.md).
 
-This release implements the **memory layers** (sections 9.3 and 9.7).
+This release implements the **memory layers** (sections 9.3, 9.7 and 12.4).
+The runtime that writes the ledgers is the next stage. See `CLAUDE.md`.
 
 **Hardware floor.** The name says small, not tiny. The target is a mini PC or a
 Raspberry Pi 4 or 5 class board: 4 cores, 4–16 GB of RAM, and an SSD or a fast
@@ -22,7 +25,7 @@ ships with Python.
 | Failure memory | What went wrong, and what worked instead? | `FailureMemory` |
 | Cost model | What does a provider cost on **this** machine? | `CostModel` |
 
-Both are **derived**. The session ledgers (`events.jsonl`) are the only source
+All three are **derived**. The session ledgers (`events.jsonl`) are the only source
 of truth. Delete the database file and rebuild it. A test asserts that a
 rebuild loses nothing.
 
@@ -241,12 +244,12 @@ fast but occasionally very slow loses to one that is steadily slower.
 ## Design rules
 
 1. **Derived, not authoritative.** Rebuild from the ledgers at any time.
-6. **Measure, do not assume.** A number written at install is a guess by the
-   next week. Feed observation back in.
 2. **No side door.** A fact enters through the validation ladder, or not at all.
 3. **Trust is inherited and permanent.**
 4. **Path 1 first.** Add vectors when you have measured that you need them.
 5. **No model in the read path.** Everything here is SQL and BM25.
+6. **Measure, do not assume.** A number written at install is a guess by the
+   next week. Feed observation back in.
 
 ---
 
@@ -264,10 +267,12 @@ fast but occasionally very slow loses to one that is steadily slower.
 
 ```
 src/picoharness/memory/
-  episodic.py    # ingest, cascade path 1, typed projection, trust
+  episodic.py   # ingest, cascade path 1, typed projection, trust
   failure.py    # taxonomy, signatures, planner API, SQL views, CLI
-tests/                 # 46 tests, no fixtures on disk
-examples/              # two runnable demos
+  cost.py       # v_provider_cost, self-calibration from the ledgers
+  samples.py    # sample ledgers; the executable spec of the format
+tests/          # 58 tests, no fixtures on disk
+examples/       # two runnable demos
 ```
 
 MIT.

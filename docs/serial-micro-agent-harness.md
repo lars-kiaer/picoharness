@@ -246,8 +246,8 @@ This gives four properties at no extra cost:
 {"seq":16,"t":"2026-08-19T09:41:04Z","type":"fact_added","step":"s2","provider":"extract-350m-q4@sha256:9a1c…","fact":{"error_count":7,"first_error":"disk I/O timeout"},"schema":"log_summary@2"}
 ```
 
-Note the `model` field. It holds the hash of the exact weights file. This makes
-the run repeatable.
+Note the `provider` field. It holds the id of the provider and the hash of the
+exact weights file. This makes the run repeatable.
 
 ### 4.4 Compaction
 
@@ -762,7 +762,7 @@ question, and each one has a different lifetime.
 The last one is the layer that most designs never build. A system that only
 remembers its successes walks into the same dead end every time.
 
-Three rules hold across all four.
+Three rules hold across all five.
 
 **Every layer above the ledger is derived.** Delete any of them and rebuild
 from the ledgers. If a layer cannot be rebuilt, it holds state that escaped
