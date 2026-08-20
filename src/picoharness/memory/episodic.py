@@ -27,14 +27,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
+from ..ledger import read_events
+from ..trust import CONTROL_SAFE, TRUST_ORDER, Trust
 from .cost import COST_SCHEMA
 from .failure import FAILURE_SCHEMA, classify_event
 
-Trust = Literal["T0", "T1", "T2"]
 BudgetClass = Literal["interactive", "attended", "background", "batch"]
 
-TRUST_ORDER: dict[str, int] = {"T2": 0, "T0": 1, "T1": 2}
-CONTROL_SAFE: frozenset[str] = frozenset({"T0", "T2"})
+# `Trust`, `TRUST_ORDER`, `CONTROL_SAFE` and `read_events` now live in the core,
+# and are re-exported here so that an existing import keeps working. One home
+# each: the store and the runtime must not disagree about what T1 means, or
+# about how a ledger line is read.
 
 
 # --------------------------------------------------------------------------
@@ -197,19 +200,6 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: fh.read(1 << 16), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def read_events(path: Path) -> Iterator[dict[str, Any]]:
-    """Yield the events of one ledger. A bad line stops the read loudly."""
-    with path.open("r", encoding="utf-8") as fh:
-        for lineno, line in enumerate(fh, start=1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                yield json.loads(line)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"{path}:{lineno} is not valid JSON") from exc
 
 
 def flatten_payload(payload: Any, prefix: str = "") -> Iterator[tuple[str, Any]]:
@@ -707,6 +697,10 @@ def _fts_query(raw: str) -> str:
 
 __all__ = [
     "EpisodicIndex",
+    "read_events",
+    "Trust",
+    "TRUST_ORDER",
+    "CONTROL_SAFE",
     "RecallPolicy",
     "Recalled",
     "Provenance",
