@@ -5,6 +5,7 @@ Two stores, one SQLite file, one ingest pass:
 * `EpisodicIndex` — cross-session memory. What happened last time.
 * `FailureMemory` — what went wrong, and what worked instead.
 * `CostModel` — what a provider actually costs on THIS machine.
+* `read_measurements` — those numbers, in the shape the selection policy takes.
 
 Both are DERIVED from the session ledgers. Delete the database and rebuild it.
 """
@@ -25,6 +26,7 @@ from .failure import (
     normalise_detail,
     signature_for,
 )
+from .policy import read_measurements
 
 __all__ = [
     "EpisodicIndex",
@@ -41,4 +43,5 @@ __all__ = [
     "classify_event",
     "signature_for",
     "normalise_detail",
+    "read_measurements",
 ]

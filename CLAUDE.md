@@ -18,18 +18,19 @@ into the memory layers that were built before it.
 | v0 measurements | Waiting on hardware. Nothing measured yet |
 | **v1** ledger, loop, `code` provider | **Done.** `tests/test_runtime.py` is the exit test |
 | v2 `gguf` adapter, swap test, system channel | **Next.** First thing that needs Linux |
-| v3 selection policy, budgets, JIT tools | Filters have marked attachment points in `registry.select()` |
+| v3 selection policy, budgets, JIT tools | **Half done.** `select()` implements all six filters of §6.4; JIT tool retrieval is not started |
 | v4 planner, escalation | `call_planner()` is an open gap in `runtime.run()`, deliberately not stubbed |
 | v5 the three probe tasks | Not started |
-| v6 memory layers | Done, and now has a real producer |
+| v6 memory layers | Done, with a real producer and now a real consumer |
 | v7 security suite, sandbox | The world seam exists; `LocalWorld` runs no subprocess on purpose |
 
 Also done, out of order: the 30-fixture set for `extract@1`, a `code` provider
 that scores **28 of 30** against it, and the validation ladder at levels 2–4.
 
-The core is at about **1,720 lines of code** against the 2,000-line budget of
-§17. There is room for v2, and not unlimited room. When tempted to add a special
-case to the runtime, ask whether it belongs in a manifest.
+The core is at **1,809 lines of code** against the 2,000-line budget of §17,
+counting `src/picoharness/*.py` and `adapters/`, but not `providers/` (189) or
+`memory/` (1,257). There is room for v2, and not unlimited room. When tempted to
+add a special case to the runtime, ask whether it belongs in a manifest.
 
 ## What to pick up next
 
@@ -38,10 +39,10 @@ case to the runtime, ask whether it belongs in a manifest.
 2. **Seven rulings in `fixtures/README.md` are unsettled** and should be decided
    *before* the first evaluation run. A convention changed afterwards invalidates
    every pass rate measured under the old one.
-3. **CI has never been observed to run.** The workflow exists and targets Ubuntu
-   on 3.11 and 3.14; everything so far was verified locally on Windows/3.14. A
-   static audit found no 3.12-only syntax and no non-stdlib import besides
-   pytest, but 3.11 has not actually executed the suite. Check the first run.
+3. **CI runs and passes.** Five runs on Ubuntu against 3.11 and 3.14, green,
+   the newest on `3a4d997` (checked 2026-08-20 through the GitHub API, because
+   `gh` is not installed on this box). The declared floor really does execute
+   the suite.
 4. **§16 still has six open decisions**, and question 3 — how models arrive on
    the box — now blocks more than it did: Needle fetches its engine over the
    network, which collides with P9.
@@ -103,6 +104,12 @@ case to the runtime, ask whether it belongs in a manifest.
 - **The topology is serial by decision, not by default** (3.1). Concurrency
   would cost the residency policy, line-by-line diffing of two runs, and the
   ledger being the causal history rather than a reconstruction of it.
+- **The policy reads the ledger, once** (6.4, 12.4). `select()` filters on
+  measured pass rate and measured cost, from `read_measurements()`. The numbers
+  are frozen for the task and written to the ledger as `policy_snapshot`, so a
+  replay routes on what the run saw and not on what the database holds today.
+  Below five calls there is no measurement, only a count, and neither filter may
+  act on it.
 - **A missing confidence is not a low confidence** (6.5). A provider that
   reports no score is never gated, and a floor is measured from the ledger, not
   chosen. An uncalibrated score is worse than none because it looks like
@@ -120,6 +127,11 @@ plan_created  validation_failed  grammar_failed  range_failed
 crosscheck_failed  critic_rejected  tool_failed  tool_timeout  tool_empty
 capability_gap  breaker_tripped  budget_exhausted  approval_denied  step_failed
 ```
+
+Two types are written but not indexed, and that is deliberate: `tool_output`
+points at a blob, and `policy_snapshot` records what the policy had measured
+before it chose. `ledger.EVENT_TYPES` is the writer's vocabulary and stays a
+superset of the list above; a name outside it is refused at `append()`.
 
 Field requirements worth remembering: `step_started` carries `trust` and
 `subject`; `fact_added` carries `provider`, `schema`, `duration_ms`,
@@ -184,7 +196,7 @@ TOPS does not move the number that matters.
 ## Commands
 
 ```bash
-.venv/Scripts/python -m pytest -q          # 58 tests, about 1 second
+.venv/Scripts/python -m pytest -q          # 401 tests, about 5 seconds
 .venv/Scripts/python -m ruff check .
 pico-failures list                          # the operator reports
 pico-failures report --name demotion_candidates --floor 0.8

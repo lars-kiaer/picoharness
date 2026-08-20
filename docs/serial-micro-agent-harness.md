@@ -269,6 +269,7 @@ This gives four properties at no extra cost:
 | Type | Written by | Contains |
 |------|-----------|----------|
 | `user_input` | runtime | The raw text from the user. |
+| `policy_snapshot` | runtime | What the policy had measured before it chose. |
 | `plan_created` | planner | The list of steps. |
 | `step_started` | runtime | The step ID and the tool name. |
 | `tool_output` | runtime | A reference to the raw output on disk. |
@@ -1637,6 +1638,16 @@ and let the estimate say which of the two it is.
 `v_provider_cost` and a `CostModel` with `estimate()`, `cheapest()`, and
 `stale_manifests()`. Run `stale_manifests()` after any hardware change: a
 manifest written on one machine is a guess on the next.
+
+`picoharness.memory.read_measurements()` reads both views into the shape the
+policy of section 6.4 takes. The read happens once, before the task starts, and
+the result does not change while the task runs. A policy that read the database
+between two steps would route the second step differently for a reason the
+ledger cannot show. The numbers are written into the ledger as a
+`policy_snapshot` event, so a replay uses what the run used and not what the
+database holds today. This is the same rule as the recorded clock of section
+10.3: an input that changes by itself must be recorded, or the replay proves
+nothing.
 
 ---
 

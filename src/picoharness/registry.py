@@ -12,17 +12,19 @@ A capability needs three roles, and one alone is not a capability:
 
 A definition with no consumer is a guess about the future. Delete it.
 
-## What `select()` does and does not do yet
+## What `select()` does
 
-Section 6.4 gives the full policy. This implements the filters that v1 can
-honestly apply — modality, trust ceiling, control permission — and the sort that
-matters most: `kind == "code"` first. The two filters that need measurements,
-quality floor and estimated cost against the remaining budget, attach at the
-marked points once `v_provider_health` and `v_provider_cost` have rows in them.
-
-That ordering is deliberate. A cost filter with no measurements would be a
+Section 6.4 gives the full policy, and `select()` now implements all six of its
+filters. Four of them read a manifest: modality, the trust ceiling, control
+permission, and the target schema. Two read the ledger: the measured pass rate
+against a quality floor, and the measured cost against what the budget has
+left. Those two arrive last on purpose. A cost filter with no measurements is a
 filter on guesses, and section 12.4 is clear that a manifest number is a guess
 by the following week.
+
+The measurements are handed in as a `Snapshot`, not read from a database here.
+The registry therefore has no connection, no clock and no state that changes
+under it, which is what lets one composition choose the same provider twice.
 """
 
 from __future__ import annotations
@@ -30,12 +32,14 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import math
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from .adapters.base import Adapter, ProviderError
+from .policy import Snapshot
 from .schemas import MANIFEST_SCHEMA, validate_security_block
 from .trust import TRUST_ORDER
 from .validate import Schema
@@ -209,6 +213,9 @@ class Registry:
         trust_in: str = "T1",
         mime: str = "text/plain",
         exclude: frozenset[str] = frozenset(),
+        measured: Snapshot | None = None,
+        quality_floor: float | None = None,
+        budget_ms: float | None = None,
     ) -> Provider:
         """Choose a provider, deterministically. Raises `CapabilityGap` if none.
 
@@ -239,19 +246,50 @@ class Registry:
         pool = [p for p in pool if p.may_emit_control(capability) == is_control]
         pool = [p for p in pool if p.kind in self.adapters]
 
-        # Section 6.4 also filters on measured pass rate against a quality floor,
-        # and on estimated cost against the remaining budget. Both attach here,
-        # once `v_provider_health` and `v_provider_cost` have rows. Filtering on
-        # a manifest guess before then would be worse than not filtering.
+        # The last two filters of section 6.4. Both are silent until the ledger
+        # has enough calls to speak: a provider nobody has run is neither
+        # demoted for a pass rate it has not earned nor excluded for a cost
+        # nobody measured. That is section 12.4 — a small sample does not
+        # override the manifest — and it is why these filters could not be
+        # written before the runtime produced ledgers.
+        seen = measured or Snapshot()
+        if quality_floor is not None:
+            pool = [
+                p
+                for p in pool
+                if (rate := seen.of(p.id, schema).pass_rate) is None or rate >= quality_floor
+            ]
+        if budget_ms is not None:
+            pool = [
+                p
+                for p in pool
+                if (cost := seen.of(p.id, schema).p90_ms) is None or cost <= budget_ms
+            ]
 
         if not pool:
+            limits = []
+            if quality_floor is not None:
+                limits.append(f"a pass rate of {quality_floor}")
+            if budget_ms is not None:
+                limits.append(f"{budget_ms:.0f} ms of budget")
             raise CapabilityGap(
                 f"{capability!r} has providers, but none produces {schema or 'any schema'} "
                 f"from {trust_in} {mime} as a "
                 f"{'control' if is_control else 'data'} capability"
+                + (" within " + " and ".join(limits) if limits else "")
             )
 
-        pool.sort(key=lambda p: (p.kind != "code", p.id))
+        # `kind == "code"` first, then cheapest. A provider with no measured
+        # cost sorts last within its kind rather than first: the manifest of
+        # section 6.3 is supposed to carry a cost from `probe()`, so an absent
+        # number means nobody has provisioned or run it, and a known quantity
+        # is the better default. The `id` keeps the order total, which is what
+        # makes a replay pick the same provider twice.
+        def rank(provider: Provider) -> tuple[bool, float, str]:
+            cost = seen.of(provider.id, schema).p90_ms
+            return (provider.kind != "code", math.inf if cost is None else cost, provider.id)
+
+        pool.sort(key=rank)
         return pool[0]
 
     # -- the contract, section 6.1 ----------------------------------------

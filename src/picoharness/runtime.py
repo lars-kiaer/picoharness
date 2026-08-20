@@ -35,6 +35,7 @@ from .budget import BreakerState, Budget
 from .hooks import Hooks, Rejected
 from .ledger import Ledger, ProviderInput, assert_visible, project
 from .payload import Payload
+from .policy import Snapshot
 from .registry import CapabilityGap, Registry
 from .validate import CrossChecks, Schema, ladder
 from .world import World, WorldError
@@ -107,6 +108,8 @@ class Runtime:
         budget: Budget | None = None,
         hooks: Hooks | None = None,
         cross_checks: dict[str, CrossChecks] | None = None,
+        measured: Snapshot | None = None,
+        quality_floor: float | None = None,
         audit: bool = True,
     ) -> None:
         self.ledger = ledger
@@ -117,6 +120,12 @@ class Runtime:
         self.budget = budget or Budget()
         self.hooks = hooks or Hooks()
         self.cross_checks = cross_checks or {}
+        # Section 6.4. The floor is configuration, so it belongs in the
+        # composition hash as well; `Composition.policy` is where it goes. The
+        # measurements are not configuration — they are what this box observed —
+        # so they go into the ledger instead, where a replay can read them back.
+        self.measured = measured or Snapshot()
+        self.quality_floor = quality_floor
         self.breakers = BreakerState()
 
         # Section 6.1: hold every registration to its contract before the first
@@ -141,6 +150,12 @@ class Runtime:
     def run(self, goal: str, plan: list[Step]) -> Outcome:
         """Run a plan to its end. Always returns; never leaves the caller waiting."""
         self.ledger.append("user_input", text=goal)
+        if self.measured or self.quality_floor is not None:
+            self.ledger.append(
+                "policy_snapshot",
+                quality_floor=self.quality_floor,
+                measurements=self.measured.to_json(),
+            )
         self.ledger.append("plan_created", steps=[s.id for s in plan])
 
         missing: list[str] = []
@@ -227,6 +242,9 @@ class Runtime:
                     trust_in=raw.trust,
                     mime=raw.mime,
                     exclude=frozenset(tried),
+                    measured=self.measured,
+                    quality_floor=self.quality_floor,
+                    budget_ms=self.budget.remaining().wall_ms,
                 )
             except CapabilityGap as gap:
                 self.ledger.append(

@@ -43,6 +43,7 @@ EVENT_TYPES: frozenset[str] = frozenset(
         # the spine of a session
         "composition",          # seq 0, always. See 4.6.
         "user_input",
+        "policy_snapshot",      # what the policy measured before it chose. 12.4
         "plan_created",
         "step_started",
         "tool_output",

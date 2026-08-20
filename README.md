@@ -8,8 +8,12 @@ The design is in [`docs/serial-micro-agent-harness.md`](docs/serial-micro-agent-
 The runtime and model choices are in
 [`docs/model-evaluation-and-runtime.md`](docs/model-evaluation-and-runtime.md).
 
-This release implements the **memory layers** (sections 9.3, 9.7 and 12.4).
-The runtime that writes the ledgers is the next stage. See `CLAUDE.md`.
+The released package (0.1.0) implements the **memory layers** (sections 9.3,
+9.7 and 12.4). The repository has since gained the runtime that writes the
+ledgers, build stage v1 of section 15: `ledger.py`, `composition.py`,
+`registry.py`, `runtime.py`, the validation ladder, and the `code` adapter. The
+sections below describe the released package. See `CLAUDE.md` for the state of
+the whole build.
 
 **Hardware floor.** The name says small, not tiny. The target is a mini PC or a
 Raspberry Pi 4 or 5 class board: 4 cores, 4–16 GB of RAM, and an SSD or a fast
@@ -35,7 +39,7 @@ rebuild loses nothing.
 
 ```bash
 pip install -e ".[dev]"
-pytest                      # 58 tests, about 1 second
+pytest                      # 401 tests, about 5 seconds
 ```
 
 Python 3.11 or later. No network access is needed at run time.
@@ -271,7 +275,7 @@ src/picoharness/memory/
   failure.py    # taxonomy, signatures, planner API, SQL views, CLI
   cost.py       # v_provider_cost, self-calibration from the ledgers
   samples.py    # sample ledgers; the executable spec of the format
-tests/          # 58 tests, no fixtures on disk
+tests/          # 401 tests, over the whole repository
 examples/       # two runnable demos
 ```
 

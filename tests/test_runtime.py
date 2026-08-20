@@ -94,8 +94,12 @@ DISK_SCHEMA = Schema(
 
 
 def build(tmp_path: Path, *, manifests=None, budget=None, session="job-v1",
-          clock=None, data: Path | None = None):
-    """Everything a task needs, wired the way a real boot would wire it."""
+          clock=None, data: Path | None = None, **policy):
+    """Everything a task needs, wired the way a real boot would wire it.
+
+    `policy` carries the two arguments of section 6.4 that need measurements,
+    `measured` and `quality_floor`. `tests/test_policy.py` is their caller.
+    """
     data = data or (tmp_path / "data")
     data.mkdir(parents=True, exist_ok=True)
     (data / "df.txt").write_text(DF_CAPTURE, encoding="utf-8")
@@ -136,6 +140,7 @@ def build(tmp_path: Path, *, manifests=None, budget=None, session="job-v1",
         schemas=schemas,
         budget=budget or Budget("attended"),
         hooks=hooks,
+        **policy,
     )
     boot(
         ledger,
