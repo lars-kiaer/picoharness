@@ -94,11 +94,14 @@ DISK_SCHEMA = Schema(
 
 
 def build(tmp_path: Path, *, manifests=None, budget=None, session="job-v1",
-          clock=None, data: Path | None = None, **policy):
+          clock=None, data: Path | None = None, adapters=(), **policy):
     """Everything a task needs, wired the way a real boot would wire it.
 
     `policy` carries the two arguments of section 6.4 that need measurements,
     `measured` and `quality_floor`. `tests/test_policy.py` is their caller.
+    `adapters` adds a second kind beside `code`; `tests/test_gguf.py` uses it
+    for the swap test, and passing the same call two manifest lists is what
+    makes that test mean anything.
     """
     data = data or (tmp_path / "data")
     data.mkdir(parents=True, exist_ok=True)
@@ -114,6 +117,8 @@ def build(tmp_path: Path, *, manifests=None, budget=None, session="job-v1",
 
     registry = Registry()
     registry.add_adapter(CodeAdapter())
+    for adapter in adapters:
+        registry.add_adapter(adapter)
     registry.add_capability(Capability("extract@1", "text", "schema", is_control=False))
     registry.add_capability(Capability("answer@1", "facts", "text", is_control=False))
     for manifest in manifests if manifests is not None else MANIFESTS:

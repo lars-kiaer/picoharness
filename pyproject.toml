@@ -29,6 +29,13 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
+# The `gguf` adapter, and only that adapter. It stays out of `dependencies`
+# because a box that runs no model must not carry it, and because the promise
+# above is about what the runtime needs, not about what one provider kind
+# needs. Know the size of it: this pulls numpy, jinja2, diskcache, MarkupSafe
+# and typing-extensions as well, and on an offline ARM board that is six
+# wheels to carry or a compile to run there.
+gguf = ["llama-cpp-python>=0.3"]
 
 [project.urls]
 Homepage = "https://github.com/lars-kiaer/picoharness"

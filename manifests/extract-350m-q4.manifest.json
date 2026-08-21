@@ -1,0 +1,47 @@
+{
+  "id": "extract-350m-q4",
+  "implements": [
+    "extract@1"
+  ],
+  "kind": "gguf",
+  "file": "LFM2-350M-Extract-Q4_K_M.gguf",
+  "sha256": "sha256:687a31c3e7864647aa181e1feb156e4e5da33978c174d7dbf0d289f6014a5621",
+  "produces": [
+    "log_summary@2"
+  ],
+  "modality_in": [
+    "text"
+  ],
+  "languages": [
+    "en"
+  ],
+  "max_input_bytes": 12000,
+  "context": 8192,
+  "resource": {
+    "ram_mb": null,
+    "cold_load_ms": null,
+    "warm_load_ms": null
+  },
+  "cost": {
+    "prefill_tok_s": null,
+    "decode_tok_s": null
+  },
+  "security": {
+    "max_trust_in": {
+      "extract@1": "T1"
+    },
+    "may_emit_control": []
+  },
+  "confidence_floor": null,
+  "determinism": "seeded",
+  "sampler": {
+    "temp": 0.0,
+    "top_k": 1,
+    "seed": 0
+  },
+  "grammar": null,
+  "system_prompt": "extract-log-summary.md",
+  "system_prompt_sha256": "sha256:19ad17b7c4c822bbfa0788b136869a2343990b57df78d2ed1e1d7845469c5961",
+  "escalates_to": null,
+  "probe_sample": "probe-sample.log"
+}

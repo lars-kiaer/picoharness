@@ -1,0 +1,6 @@
+Aug 19 05:00:01 probe-01 systemd[1]: Started Sample workload.
+Aug 19 05:00:02 probe-01 sampled[2200]: info  worker pool ready, 2 workers
+Aug 19 05:01:14 probe-01 sampled[2200]: error: queue 3 stalled, no consumer for 60 s
+Aug 19 05:01:15 probe-01 sampled[2200]: warn: queue 3 depth 512
+Aug 19 05:02:40 probe-01 sampled[2200]: info  queue 3 drained
+Aug 19 05:03:00 probe-01 sampled[2200]: info  cycle complete, 4210 records

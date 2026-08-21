@@ -66,6 +66,12 @@ MANIFEST_SCHEMA: dict[str, Any] = {
         "sampler": {"type": "object"},
         "grammar": {"type": ["string", "null"]},
         "system_prompt": {"type": ["string", "null"]},
+        # The prompt is pinned by hash and not by path, for the reason section
+        # 10.3 gives: the envelope is one artefact, and a path can be rewritten
+        # underneath a run without the composition hash moving.
+        "system_prompt_sha256": {"type": ["string", "null"]},
+        # The context window is a property of the model, not of the sampler.
+        "context": {"type": ["integer", "null"], "minimum": 1},
         "escalates_to": {"type": ["string", "null"]},
         "probe_sample": {"type": ["string", "null"]},
     },
