@@ -9,15 +9,17 @@ Read the section named in a rule before you argue with the rule.
 
 ## Where the project actually is
 
-**v1 is complete and v6 was built first.** A three-step task runs end to end and
-replays identically, with no model involved, and the ledger it writes ingests
-into the memory layers that were built before it.
+**v1 and most of v2 are complete, and v6 was built first.** A three-step task
+runs end to end and replays identically with no model involved, and the same
+task runs against a real model when one manifest is edited. The ledger either
+run writes ingests into the memory layers that were built before them.
 
 | Stage | State |
 |---|---|
 | v0 measurements | Waiting on hardware. Nothing measured yet |
 | **v1** ledger, loop, `code` provider | **Done.** `tests/test_runtime.py` is the exit test |
-| v2 `gguf` adapter, swap test, system channel | **Next.** First thing that needs Linux |
+| — instruction record §10.3 | **Done.** `prompt.py`, `prompts/extract-log-summary.md` |
+| v2 `gguf` adapter, swap test, system channel | **Adapter and swap test done** (`tests/test_gguf.py`). The system channel of §11.2 is not started |
 | v3 selection policy, budgets, JIT tools | **Half done.** `select()` implements all six filters of §6.4; JIT tool retrieval is not started |
 | v4 planner, escalation | `call_planner()` is an open gap in `runtime.run()`, deliberately not stubbed |
 | v5 the three probe tasks | Not started |
@@ -30,15 +32,22 @@ The one it cannot reach is `absent-06`, where an error line must be recognised
 with no severity word anywhere in the input. That is the single clearest case
 for a model in the whole set.
 
-The core is at **1,809 lines of code** against the 2,000-line budget of §17,
+The core is at **2,083 lines of code** against the 2,000-line budget of §17,
 counting `src/picoharness/*.py` and `adapters/`, but not `providers/` (189) or
-`memory/` (1,257). There is room for v2, and not unlimited room. When tempted to
-add a special case to the runtime, ask whether it belongs in a manifest.
+`memory/` (1,257). **That is 83 over, and it needs a decision, not a trim.**
+Nothing in the excess is a special case in the runtime: it is `prompt.py` (152)
+and `adapters/gguf.py` (124), and the design specifies both. So either the
+budget was set before the design was finished, or the boundary is in the wrong
+place. The case for moving it: `code.py` and `gguf.py` are implementations
+behind the adapter seam, exactly as `providers/` are implementations behind the
+capability seam, and a box that runs no model ships neither. Counted that way
+the core is **1,899**. Settle it before v3 adds more.
 
 ## What to pick up next
 
-1. **v2 needs Linux.** `wsl --install -d Ubuntu` — only `docker-desktop` is
-   installed, which is not a general-purpose distro. Or wait for the board.
+1. **Finish v2: the system channel of §11.2.** A typed environment record for
+   the system slot, never prose, and a fourth kind of poisoned fixture — an
+   instruction inside the environment record itself. It needs no hardware.
 2. **The seven rulings in `fixtures/README.md` are settled** (2026-08-20). Do
    not reopen one after the first evaluation run: a convention changed later
    invalidates every pass rate measured under the old one. Ruling 7 narrowed a
@@ -50,7 +59,13 @@ add a special case to the runtime, ask whether it belongs in a manifest.
    the suite.
 4. **§16 still has six open decisions**, and question 3 — how models arrive on
    the box — now blocks more than it did: Needle fetches its engine over the
-   network, which collides with P9.
+   network, and `llama-cpp-python` pulls five packages besides itself, so an
+   offline ARM board means six wheels carried by hand or a compile run there.
+5. **The prompt is the next real measurement.** At the shipped instruction the
+   350M model gets roughly one field in seven on four fixtures, against 29 of
+   30 for the parser. That is not yet a verdict: it is one prompt, measured
+   outside the ledger. Run it through the adapter over all 30 fixtures and read
+   `v_provider_health`, which is what the whole loop was built for.
 
 ## Rules that decide code review
 
@@ -145,6 +160,24 @@ Field requirements worth remembering: `step_started` carries `trust` and
 `memory/samples.py` is the executable specification of the format. Treat it as the
 contract.
 
+## The model box
+
+v2 needs Linux, and WSL2 `Ubuntu-24.04` is it (Python 3.12.3, gcc 13.3, cmake
+3.28). Never publish a measurement from there: it is a VM with dynamic memory,
+so its load times are not edge numbers. Use
+`MachineProfile.detect("wsl2-x86", representative=False)`.
+
+```bash
+wsl -d Ubuntu-24.04 -u root -- bash -c "cd ~/picoharness && .venv/bin/python -m pytest -q"
+```
+
+Weights live in `~/models` inside that distro and never in the repository. The
+manifest names the file relative to the model root and pins it by sha256, so
+the composition hash stays the same on every box while the pin stays real.
+`tests/test_gguf.py` skips when the weights or the binding are missing, which
+is every Windows machine and every CI runner. Provisioning is a separate step
+from running, and P9 is why.
+
 ## Hardware
 
 Three tiers, two purchases. Each answers a different question, and each produces
@@ -201,7 +234,7 @@ TOPS does not move the number that matters.
 ## Commands
 
 ```bash
-.venv/Scripts/python -m pytest -q          # 401 tests, about 5 seconds
+.venv/Scripts/python -m pytest -q          # 421 pass, 6 skip without a model
 .venv/Scripts/python -m ruff check .
 pico-failures list                          # the operator reports
 pico-failures report --name demotion_candidates --floor 0.8
