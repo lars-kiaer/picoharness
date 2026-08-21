@@ -130,6 +130,13 @@ the core is **1,899**. Settle it before v3 adds more.
   replay routes on what the run saw and not on what the database holds today.
   Below five calls there is no measurement, only a count, and neither filter may
   act on it.
+- **KV snapshots are made at provisioning, not during evaluation** (7.4). The
+  fixed prefix is 600–800 tokens and its snapshot is 20–35 MB, so a read costs
+  ~20 ms against seconds of prefill. But the prefix moves while the prompt is
+  being tuned, and a bake-off has ten to twenty candidates, so generating a
+  library before the prompt settles means regenerating it every iteration.
+  Retrieval and prefix caching also pull against each other (8.2): cache what
+  comes before the tool block, prefill the block.
 - **A missing confidence is not a low confidence** (6.5). A provider that
   reports no score is never gated, and a floor is measured from the ledger, not
   chosen. An uncalibrated score is worse than none because it looks like

@@ -2,8 +2,14 @@
 
 **Serial Micro-Agent Harness — a design for a home-built edge compute agent system**
 
-Version 0.9 — draft for review
+Version 0.10 — draft for review
 Language: ASD-STE100 Simplified Technical English
+
+Change from v0.9. Section 7.4 is rewritten around the fixed prefix, which the
+instruction record of 10.3 made measurable. It corrects the size warning, says
+where the cache pays, and moves the library into provisioning. Section 8.2 states
+the cost that retrieval imposes on it. Section 12.2 gains a column, and section
+16 question 3 gains a second consequence.
 
 Change from v0.8. A review of Sakana Fugu, and a survey of where schemas are
 used. Section 3.1 records the serial topology as a decision. Section 4.6 gives
@@ -882,12 +888,101 @@ A large part of the CPU time goes to prefill. The system prompt and the schema
 are the same every time. Compute the KV cache for that fixed prefix once. Save
 it beside the model.
 
-Two warnings:
+The instruction record of section 10.3 makes the fixed prefix measurable, and
+the numbers are better than the first version of this section suggested:
 
-- A KV snapshot is large. For a 1.2B model it can be bigger than the quantized
-  weights. Include this in the disk budget.
-- The snapshot is invalid if you change the model file, the quantization, the
-  context size, or the prefix. Key the file on all four.
+| Part | Size |
+|------|------|
+| The prose of the instruction | about 2.5 kB |
+| The schema descriptions rendered into it | about 1.4 kB |
+| **The fixed prefix** | **about 600 to 800 tokens** |
+| One snapshot of that prefix, 350M or 1.2B | **20 to 35 MB** |
+| To read it from an NVMe disk | about 20 ms |
+| To prefill the same tokens on a CPU | seconds |
+
+**Milliseconds against seconds, on the fixed part.** That is the whole argument.
+
+#### Correction to the size warning
+
+An earlier version of this section said that a snapshot for a 1.2B model can be
+bigger than the quantized weights. That is true of a **long context** and not of
+a fixed system prefix. At 700 tokens the snapshot is about 35 MB against 750 MB
+of weights, which is one twentieth.
+
+State the two cases apart. As one warning it discourages the use where the
+technique is cheapest.
+
+#### Where the cache pays, and where it does not
+
+| Capability | The fixed prefix is | Value |
+|------------|--------------------|-------|
+| `answer@1` | 80 to 90 % of the prompt; the facts are a few hundred bytes | Highest |
+| `extract@1` | The majority on a normal log window, which is 200 to 800 tokens | Good |
+| `route@1`, `plan@1` | Not fixed. See below | Partial |
+
+**Just-in-time tool retrieval and prefix caching pull against each other.**
+Section 8.2 injects the top two or three tool schemas for each turn, so the
+prefix changes with the turn and one cached prefix does not fit. Caching one
+snapshot for each combination of tools grows too fast to be a method.
+
+Split the prefix instead. Cache what comes **before** the tool block — the
+system prompt and the output format — and prefill the tool block each time. Part
+of the saving is kept, and nothing has to be recomputed when the retrieval
+returns a different set.
+
+#### The key
+
+The snapshot is invalid if you change the model file, the quantization, the
+context size, or the prefix. Key the file on all four.
+
+Two notes on the fourth and on what is **not** in the key.
+
+The prefix already has a digest. `Instruction.digest()` covers the prose, the
+parameters and the schema that was rendered in, so the key writes itself.
+
+`n_threads` is not in the key. Section 1.6 of the companion note asked whether
+the reduction order of llama.cpp makes the thread count part of a result, and
+the measurement says it does not: the same fixture gave the same bytes at one
+thread and at four. Had the answer been the other way, the library would have
+needed one snapshot for each thread count. The build itself stays in the key,
+through the machine hash of section 4.6.
+
+#### Residency decides how often you pay for it
+
+A **cold** provider reads its snapshot again at every step, so it pays the read
+each time. A **warm** or **pinned** provider pays it once. The cache is
+therefore worth most to the classes that section 7.3 keeps in memory, and least
+to the class that swaps.
+
+#### When to build the library
+
+Not during evaluation, and not at run time. **Generate the snapshots in the
+provisioning step**, which is section 16 question 3.
+
+Three reasons.
+
+The prefix moves while the prompt is being tuned. The instruction record exists
+so that prose can be tuned, and the fixture set is what measures a change, so
+every edit to the prose invalidates every snapshot.
+
+A bake-off has ten to twenty candidates. Section 7 of the companion note wants
+three providers for `extract@1` alone. Generating a snapshot for each candidate
+and each prompt version costs hours of CPU, and most of the candidates are then
+eliminated.
+
+Neither of the two numbers that decide the value has been measured. The gain is
+the prefill time less the read time, and section 12.1 is still empty.
+
+Provisioning is the right place for a further reason. P9 keeps the network out
+of the run time, so a model already arrives in a separate step — and that step
+is the one moment when the set of models is fixed and known, so every snapshot
+generated is a snapshot that gets used.
+
+Answering "how do models arrive on the box" therefore also answers "when are
+their snapshots made". The two questions have one answer.
+
+The disk cost is not a reason to wait: a handful of providers at 20 to 35 MB,
+across a few versions of a prompt, stays under 1 GB.
 
 ---
 
@@ -935,7 +1030,14 @@ Step 3 makes it **unreachable**: the grammar has no production for it, so the
 model cannot emit it, whatever the prompt says.
 
 The change costs nothing at run time, and it converts a prompt-engineering nudge
-into a guarantee. It also closes a path that section 11.2 would otherwise leave
+into a guarantee.
+
+It does have one cost, and it is not obvious: **a prefix that changes with the
+turn cannot be cached whole.** Section 7.4 keeps a KV snapshot of the fixed
+prefix, and retrieval makes the tool block part of the prefix variable. Split
+the prefix — cache what comes before the tool block, prefill the block — and take
+the smaller saving. Do not cache one snapshot for each combination of tools; that
+count grows faster than the disk. It also closes a path that section 11.2 would otherwise leave
 open. An instruction hidden in a log file can name a tool. If the grammar covers
 every tool, the model can write that name. If the grammar covers only the tools
 that the retrieval step selected, the name has no representation.
@@ -1566,14 +1668,19 @@ Record the result in a table like this:
 
 ### 12.2 The decision table
 
-| If cold load is | Then |
-|-----------------|------|
-| < 100 ms | Swap freely. The design in this document works as written. |
-| 100–400 ms | Keep the reducer warm. Swap only the planner. |
-| > 400 ms | Keep two models resident. Batch the work. Do not swap per step. |
+| If cold load is | Then | And the prompt cache |
+|-----------------|------|----------------------|
+| < 100 ms | Swap freely. The design in this document works as written. | Worth little. Prefill is cheap on a machine this fast |
+| 100–400 ms | Keep the reducer warm. Swap only the planner. | Worth most. The reducer pays the read once and keeps it |
+| > 400 ms | Keep two models resident. Batch the work. Do not swap per step. | Worth most, and for the same reason. Both resident models keep their snapshot |
 
 The whole design depends on this number. Measure it before you write the
 runtime.
+
+Measurement 2 of section 12.1 decides the prompt cache on its own. The gain from
+a snapshot is the prefill time less the read time, and a read from NVMe is about
+20 ms. Below roughly 40 ms of prefill for the fixed prefix there is nothing to
+win; above a second the saving is most of the call.
 
 ### 12.3 A realistic latency budget
 
@@ -1723,6 +1830,11 @@ measured problem.
 | v6 | Fact store, episodic index (9.3), failure memory (9.7), cost model (12.4), trajectory cache. | A repeated task uses the cache and is measurably faster. The planner avoids a dead end it met before, and the policy prices providers from measurement. |
 | v7 | Security suite, sandbox, approvals. | No poisoned fixture changes the control flow. |
 
+The KV snapshots of section 7.4 are not a stage. They are made in the
+provisioning step, after the prompt has stopped moving and the provider has been
+chosen, so they arrive somewhere between v2 and v3 and only for what survived
+the bake-off.
+
 Two notes on the order.
 
 **v1 must have no model.** A system that works with only a parser proves that
@@ -1752,6 +1864,9 @@ These questions remain. Each one changes the design.
 3. **How do models arrive on the box?** Pure edge means no download at run time.
    Is provisioning a signed bundle, a USB drive, or a manual copy? The answer
    decides whether the runtime must verify a signature as well as a hash.
+   It also decides **when the KV snapshots of section 7.4 are made**, because
+   provisioning is the one moment when the set of models is fixed and known.
+   The two questions have one answer.
 4. **Is a second modality in scope for v1?** If yes, the adapter interface must
    handle a blob, and not only text, from the first line of code. Retrofitting
    this later is expensive.
@@ -1761,7 +1876,11 @@ These questions remain. Each one changes the design.
 6. **Who is the user?** A single expert user allows a technical output format
    and a short approval flow. A household changes both.
 7. **What is the disk budget?** KV snapshots, a model library, and a session
-   archive grow faster than expected.
+   archive grow faster than expected. One of the three now has a number: a
+   snapshot of the fixed prefix is 20 to 35 MB, so a handful of providers across
+   a few versions of a prompt stays under 1 GB. See 7.4. The model library
+   during a bake-off, and the session archive over a year, are the two that
+   still need answering.
 
 ---
 
@@ -1812,6 +1931,7 @@ incomplete.
 | "The system uses 0 MB RAM when idle." | The page cache holds the weights, and the page cache is RAM. |
 | "`wllama` supports WebGPU." | It does not. It is WebAssembly with SIMD. |
 | "The KV cache grows exponentially." | It grows linearly. Prefill compute is quadratic in sequence length. |
+| "A KV snapshot is bigger than the quantized weights." | True of a long context. A snapshot of a fixed 700-token prefix is about 35 MB against 750 MB of weights. See 7.4. |
 | "A 1.2B model gives 100–200 tokens per second on a CPU." | That is a fast desktop. Low-power edge hardware gives about 5–20. |
 | "A schema check makes the output safe." | It makes the output well-formed. It does not make it correct. |
 | "Three small models can vote for safety." | Their errors are correlated. Use a deterministic check instead. |
@@ -1899,6 +2019,8 @@ harness/
 | Data plane | What a tool returns and a provider produces. |
 | Policy identity | The name and the code digest of the rule that selects a provider. |
 | Counterfactual replay | Running a finished session again under a different policy. |
+| Fixed prefix | The part of a prompt that does not change between calls: the instruction and the schema. |
+| KV snapshot | The attention state of a fixed prefix, computed once and read from disk. |
 
 ---
 
